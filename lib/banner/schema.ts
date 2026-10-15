@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AUTHOR } from "../site";
 
 // Banner coordinate space. Everything is laid out in these units and the SVG scales cleanly.
 export const W = 1000;
@@ -137,7 +138,7 @@ export const parseConfig = (input: unknown): BannerConfig => configSchema.parse(
 
 export const DEFAULT_CONFIG: BannerConfig = {
   v: 1,
-  user: "2hjaito",
+  user: AUTHOR.github,
   bg: { kind: "preset", name: "itachi1" },
   dim: 0,
   r: 12,

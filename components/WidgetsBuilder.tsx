@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { FiCheck, FiCopy } from "react-icons/fi";
 import { themes } from "@/lib/cards/render";
-import { SITE_URL } from "@/lib/site";
+import { AUTHOR, SITE_URL } from "@/lib/site";
 import { inputCls, Panel, Select, Toggle } from "./editor/ui";
+import { usePersistentState } from "./usePersistentState";
 
 const CARDS = [
   { id: "streak", title: "Streak", desc: "All-time contributions, current and longest streak." },
@@ -14,11 +15,19 @@ const CARDS = [
 ] as const;
 
 export default function WidgetsBuilder() {
-  const [user, setUser] = useState("torvalds");
+  const [opts, setOpts] = usePersistentState("profilyze:widgets", {
+    user: AUTHOR.github,
+    theme: "github-dark",
+    hideBorder: false,
+    transparent: false,
+  });
+  const { user, theme, hideBorder, transparent } = opts;
+  const setOpt = <K extends keyof typeof opts>(k: K) => (v: (typeof opts)[K]) => setOpts((o) => ({ ...o, [k]: v }));
+  const setUser = setOpt("user");
+  const setTheme = setOpt("theme");
+  const setHideBorder = setOpt("hideBorder");
+  const setTransparent = setOpt("transparent");
   const [debouncedUser, setDebouncedUser] = useState(user);
-  const [theme, setTheme] = useState("github-dark");
-  const [hideBorder, setHideBorder] = useState(false);
-  const [transparent, setTransparent] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedUser(user), 500);

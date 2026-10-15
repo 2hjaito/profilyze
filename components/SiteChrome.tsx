@@ -1,17 +1,17 @@
 import Link from "next/link";
 import { FaDiscord, FaGithub, FaGlobe, FaTiktok, FaYoutube } from "react-icons/fa";
-import { REPO_URL } from "@/lib/site";
+import { AUTHOR, REPO_URL } from "@/lib/site";
 import Logo from "./Logo";
 
 const socials = [
   { href: REPO_URL, label: "GitHub", icon: FaGithub },
-  { href: "https://dangth.dev", label: "Portfolio", icon: FaGlobe },
+  { href: AUTHOR.site, label: "Portfolio", icon: FaGlobe },
   { href: "https://discord.com/invite/MxmYrMrJA6", label: "Discord", icon: FaDiscord },
   { href: "https://www.youtube.com/@devlands", label: "YouTube", icon: FaYoutube },
   { href: "https://www.tiktok.com/@theanishtar", label: "TikTok", icon: FaTiktok },
 ];
 
-type Page = "banner" | "widgets" | "about";
+type Page = "banner" | "readme" | "widgets" | "community" | "about";
 
 export function SiteHeader({ active }: { active: Page }) {
   const link = (href: string, label: string, on: boolean) => (
@@ -25,13 +25,15 @@ export function SiteHeader({ active }: { active: Page }) {
   return (
     <header className="sticky top-0 z-40 border-b border-line/60 bg-bg/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-4 px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
+        <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold tracking-tight">
           <Logo size={28} />
-          Profilyze
+          <span className="hidden sm:inline">Profilyze</span>
         </Link>
-        <nav className="flex gap-1">
+        <nav className="-mx-1 flex min-w-0 gap-1 overflow-x-auto">
           {link("/", "Banner", active === "banner")}
+          {link("/readme", "README", active === "readme")}
           {link("/widgets", "Widgets", active === "widgets")}
+          {link("/community", "Community", active === "community")}
           {link("/about", "About", active === "about")}
         </nav>
         <a
@@ -53,9 +55,10 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-6 text-sm text-muted sm:flex-row sm:px-6">
         <p>
           © {new Date().getFullYear()} Profilyze · Built by{" "}
-          <a href="https://dangth.dev" className="text-fg hover:text-accent">
-            Tran Huu Dang
-          </a>
+          <a href={`https://github.com/${AUTHOR.github}`} target="_blank" rel="noopener noreferrer" className="text-fg hover:text-accent">
+            {AUTHOR.name}
+          </a>{" "}
+          <span className="text-zinc-600">(@{AUTHOR.github})</span>
         </p>
         <nav className="flex items-center gap-4 text-lg">
           {socials.map(({ href, label, icon: Icon }) => (

@@ -41,11 +41,10 @@ export default function Editor() {
     (async () => {
       const c = new URLSearchParams(window.location.search).get("c");
       try {
+        // Load the draft first so a shared ?c= design replaces it but stays one undo away.
+        const draft = localStorage.getItem(DRAFT_KEY);
+        if (draft) load(parseConfig(JSON.parse(draft)));
         if (c) load(parseConfig(await decodeConfig(c)));
-        else {
-          const draft = localStorage.getItem(DRAFT_KEY);
-          if (draft) load(parseConfig(JSON.parse(draft)));
-        }
       } catch {
         /* fall back to the default banner */
       }
