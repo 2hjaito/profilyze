@@ -14,22 +14,24 @@ export default function IconPicker({
   max,
   withGlyphs,
   glyphColor = "currentColor",
+  vectorOnly,
 }: {
   selected: string[];
   onToggle: (id: string) => void;
   max?: number;
   withGlyphs?: boolean;
   glyphColor?: string;
+  vectorOnly?: boolean;
 }) {
   const [q, setQ] = useState("");
   const groups = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const match = (i: Icon) => !needle || i.label.toLowerCase().includes(needle) || i.id.includes(needle);
     return [
-      { title: "Animated", icons: animatedIcons.filter(match) },
+      { title: "Animated", icons: vectorOnly ? [] : animatedIcons.filter(match) },
       { title: "Vector · sharp at any size", icons: vectorIcons.filter(match) },
     ].filter((g) => g.icons.length);
-  }, [q]);
+  }, [q, vectorOnly]);
 
   const glyphList = withGlyphs
     ? Object.entries(glyphs).filter(([id, g]) => !q.trim() || `${id} ${g.label}`.toLowerCase().includes(q.trim().toLowerCase()))

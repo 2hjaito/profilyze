@@ -61,3 +61,15 @@ body {
     cursor: not-allowed;
   }
 }
+
+/* GitHub-like rendering for the README preview. */
+.md-preview { color: #e6edf3; font-size: 14px; line-height: 1.6; }
+.md-preview h1, .md-preview h2 { margin: 1.2em 0 0.6em; padding-bottom: 0.3em; border-bottom: 1px solid #30363d; font-weight: 600; }
+.md-preview h2 { font-size: 1.4em; }
+.md-preview h3 { margin: 1.2em 0 0.6em; font-size: 1.15em; font-weight: 600; }
+.md-preview p { margin: 0 0 1em; }
+.md-preview ul { margin: 0 0 1em; padding-left: 1.6em; list-style: disc; }
+.md-preview a { color: #4493f8; }
+.md-preview img { display: inline-block; max-width: 100%; vertical-align: middle; }
+.md-preview sub { color: #8b949e; }
+.md-preview > :first-child { margin-top: 0; }

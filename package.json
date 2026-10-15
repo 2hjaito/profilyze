@@ -10,6 +10,7 @@
     "sync:assets": "node --env-file-if-exists=.env scripts/sync-assets.mjs"
   },
   "dependencies": {
+    "marked": "^14.1.4",
     "mongodb": "^6.21.0",
     "next": "15.5.28",
     "react": "^19.3.1",
