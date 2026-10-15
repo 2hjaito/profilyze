@@ -6,7 +6,9 @@
 
 **Design your GitHub README banner on a canvas, pull live stats from GitHub, embed it with one line of Markdown.**
 
-[Open the editor](https://profilyze.vercel.app) · [Widgets](https://profilyze.vercel.app/widgets) · [About](https://profilyze.vercel.app/about)
+[Open the editor](https://profilyze.vercel.app) · [README generator](https://profilyze.vercel.app/readme) · [Widgets](https://profilyze.vercel.app/widgets) · [Community](https://profilyze.vercel.app/community)
+
+[![Profilyze users](https://profilyze.vercel.app/api/stats/users)](https://profilyze.vercel.app/community)
 
 [![Profilyze showcase banner](https://profilyze.vercel.app/api/banner?c=nZNLb9swEIT_ijC-MoUetmrzVjQuCtRAizbNJchhLVEyLZlUSfqhGvnvBSW_2wBFdFlIGM58u0vtsQGPGNZWGHDEiyVJp8GwqcDRGF3Iuv0t7oygfCXAMC_B96ikysFRGsqlUA4MhdErcAzCeRTGIRic7l6LuEgIDKTKWoBHyeiFIZcr8JDBgEcpg6gt-NMe0nvShhwZMOzAhyFDCz4cMVgvDRlc24hLlZGq9EHjRMyLCC_sYKOow92Bx_G4dxl2LsP0ZOLEzqN3hePBkAo-r9fBPanSd6SV_2wbysRdabQTtgLDFvx9GDJkutZ-ZIOie87JRtfH5KTnj8I-Ohq_Ev3p52z24-HDxy_B_fRxOvv6bfr9DCCVE6YPTq-CDy0z-PGF76ITga1kXdsbBj9LC56cZygzrbyqr_wJxJe08cvyApsZ2XhGIyjzlbjSuVj6E7nOqo6p0daVRthfNZ4ZSmp8s2cOZwRVNxyT9LDME4d15P27cnHIY_lN80IaP9Ca5qIGR05tcBL9PaN_LoeBskx00kFRTNJheN7XRortYVjJJP4_yOOZE6NdkL-JpC5Aj6I3MN7e5tJQs-gZ0-HVdY7iE-JRtBWisuDxZUYyyZNRcjbMtHJGzu21Z5SOe9PRK31fHDu2njm5ka696PsgWjuplQ3cQtqgFd3P-oZJHMGfX_4A)](https://profilyze.vercel.app/?c=nZNLb9swEIT_ijC-MoUetmrzVjQuCtRAizbNJchhLVEyLZlUSfqhGvnvBSW_2wBFdFlIGM58u0vtsQGPGNZWGHDEiyVJp8GwqcDRGF3Iuv0t7oygfCXAMC_B96ikysFRGsqlUA4MhdErcAzCeRTGIRic7l6LuEgIDKTKWoBHyeiFIZcr8JDBgEcpg6gt-NMe0nvShhwZMOzAhyFDCz4cMVgvDRlc24hLlZGq9EHjRMyLCC_sYKOow92Bx_G4dxl2LsP0ZOLEzqN3hePBkAo-r9fBPanSd6SV_2wbysRdabQTtgLDFvx9GDJkutZ-ZIOie87JRtfH5KTnj8I-Ohq_Ev3p52z24-HDxy_B_fRxOvv6bfr9DCCVE6YPTq-CDy0z-PGF76ITga1kXdsbBj9LC56cZygzrbyqr_wJxJe08cvyApsZ2XhGIyjzlbjSuVj6E7nOqo6p0daVRthfNZ4ZSmp8s2cOZwRVNxyT9LDME4d15P27cnHIY_lN80IaP9Ca5qIGR05tcBL9PaN_LoeBskx00kFRTNJheN7XRortYVjJJP4_yOOZE6NdkL-JpC5Aj6I3MN7e5tJQs-gZ0-HVdY7iE-JRtBWisuDxZUYyyZNRcjbMtHJGzu21Z5SOe9PRK31fHDu2njm5ka696PsgWjuplQ3cQtqgFd3P-oZJHMGfX_4A)
 
@@ -38,6 +40,28 @@ Start from a template, then drag, resize and restyle anything.
 | **Avatar** | Your GitHub avatar with an optional ring. |
 
 The canvas also supports image backgrounds (17 presets, including animated ones), gradients, a custom image URL, darken and corner radius.
+
+## README generator
+
+[https://profilyze.vercel.app/readme](https://profilyze.vercel.app/readme) assembles a complete profile README in one go:
+
+- your banner from the editor
+- a greeting and an about section
+- a tech stack from 66 vector logos
+- streak, graph, stats and language widgets in one theme
+- link badges
+
+You get a live preview, **Copy Markdown** and **Download README.md**. Everything you enter is saved in your browser.
+
+## Community
+
+[https://profilyze.vercel.app/community](https://profilyze.vercel.app/community) shows the latest banner of every GitHub user whose Profilyze banner is live. A banner is recorded the first time it's actually served, for example when GitHub loads it in a README, and only for accounts that exist. Any design can be opened in the editor as a starting point. Gallery thumbnails use `&preview=1`, so they don't count views.
+
+Show how many people use Profilyze:
+
+```md
+[![Profilyze users](https://profilyze.vercel.app/api/stats/users)](https://profilyze.vercel.app/community)
+```
 
 ## Widgets
 
@@ -80,6 +104,10 @@ Add `&theme=<name>` to any card. You can also add `hide_border=true` or `transpa
 | `/api/profile/banner?name=&role=&background=&tech=&skills=&streaks=&view=&user=` | Original query-string banner. `view=` is now a real views counter. |
 | `/api/github/{streak,graph,stats,languages}?user=&theme=` | Profile cards |
 | `/api/github/data?user=` | JSON used by the editor preview |
+| `/api/gallery?before=` | Community banners, newest first (JSON, 24 per page) |
+| `/api/stats/users` | "Profilyze users" badge |
+
+Add `&preview=1` to a banner URL to render it without counting a view or recording usage.
 
 ## Profile views
 
@@ -102,7 +130,7 @@ Environment variables:
 | Variable | Needed for |
 | --- | --- |
 | `TOKEN_GITHUB` (or `GITHUB_TOKEN`) | Stars, commits, PRs, issues, languages and all-time streaks. A classic token with no scopes is enough. Without one, streaks, contributions and the graph still work through GitHub's public contributions page. |
-| `MONGODB_URI` | The profile views counter, and `npm run sync:assets` |
+| `MONGODB_URI` | Profile views, the community gallery and users badge, and `npm run sync:assets` |
 
 ```bash
 npm install
@@ -130,7 +158,7 @@ The script crops backgrounds to 4:1 (stills up to 1600 px, animations up to 640 
 | `lib/banner/server.ts` | Inlines assets, subsets fonts, fetches avatars and stats |
 | `lib/github/fetch.ts` | GitHub GraphQL, with a fallback to the public contributions page |
 | `lib/cards/render.ts` | Widget cards and themes |
-| `lib/views.ts` | Profile views counter |
+| `lib/views.ts`, `lib/registry.ts` | Profile views counter, community registry (MongoDB) |
 | `components/editor/` | The drag-and-drop editor |
 
 ---

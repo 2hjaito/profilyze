@@ -27,6 +27,8 @@ const features = [
   ["Sharp at any size", "Text, glyphs, graphs and tech logos are real vector SVG. Fonts are subset and embedded, so they render identically everywhere."],
   ["Fast on GitHub", "Banners are usually 20–100 KB and are served from Vercel's edge cache. Live stats refresh every few hours."],
   ["Animated or vector", "Use the original animated icons and backgrounds, or 66 vector tech logos."],
+  ["README generator", "Build a whole profile README with your banner, intro, tech stack, widgets and links, then copy or download it."],
+  ["Community gallery", "Browse banners other developers use and start from any of them."],
   ["Profile views", "Add a views counter, such as the Sharingan, that goes up each time someone opens your profile."],
   ["Any language", "Vietnamese and other scripts work in every font that supports them."],
   ["No account", "The whole layout lives in the URL. Nothing is stored on a server."],
@@ -40,6 +42,7 @@ const api = [
   ["/api/github/graph?user=&theme=", "Contribution graph"],
   ["/api/github/stats?user=&theme=", "Stats card"],
   ["/api/github/languages?user=&theme=", "Top languages"],
+  ["/api/stats/users", "Profilyze users badge"],
 ];
 
 export default function AboutPage() {
