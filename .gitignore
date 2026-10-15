@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Raw source images for `npm run sync:assets` (the optimized copies live in public/assets)
+/public/news

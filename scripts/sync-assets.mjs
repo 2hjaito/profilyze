@@ -2,7 +2,7 @@
 // banners and registers them in lib/assets.json, which lib/catalog.ts reads.
 //
 //   npm run sync:assets               # needs MONGODB_URI in .env
-//   npm run sync:assets -- --file frog.gif --background frog --label "Frog Pond"
+//   npm run sync:assets -- --file aurora.gif --background aurora --label "Aurora" [--position top|center|bottom] [--pixel]
 //
 // Re-running is cheap: unchanged sources (same hash) are skipped. Entries that aren't in
 // MongoDB (e.g. added with --file) are kept.
@@ -23,6 +23,8 @@ const { values: args } = parseArgs({
     background: { type: "string" },
     icon: { type: "string" },
     label: { type: "string" },
+    position: { type: "string", default: "center" }, // which part survives if the image is taller than 16:9
+    pixel: { type: "boolean", default: false }, // pixel art: keep native size, render with crisp edges
     force: { type: "boolean", default: false },
   },
 });
@@ -31,15 +33,69 @@ const manifest = JSON.parse(await readFile(MANIFEST, "utf8").catch(() => '{"back
 const EXT = { webp: "webp", gif: "gif", png: "png", jpeg: "jpg" };
 
 /** Backgrounds: cropped to the banner's 4:1 ratio. Stills up to 1600px wide, animations up to 640px. */
-async function writeBackground(name, buf) {
+const POSITIONS = { top: "north", center: "centre", bottom: "south" };
+const MAX_BYTES = 1200 * 1024; // keeps banners reasonably quick to load on GitHub
+const TALLEST = 16 / 9; // banners are never taller than 16:9, so anything beyond that is cropped
+
+/** Re-encodes raw RGBA frames as an animated WebP, keeping every `step`-th frame (durations merged). */
+async function encodeFrames(raw, info, pageHeight, delays, step, quality) {
+  const frameBytes = info.width * pageHeight * info.channels;
+  const count = delays.length;
+  const keep = [];
+  for (let i = 0; i < count; i += step) keep.push(i);
+  const data = Buffer.concat(keep.map((i) => raw.subarray(i * frameBytes, (i + 1) * frameBytes)));
+  const delay = keep.map((i) => delays.slice(i, i + step).reduce((a, b) => a + b, 0));
+  return sharp(data, { raw: { width: info.width, height: pageHeight * keep.length, channels: info.channels, pageHeight } })
+    .webp({ quality, effort: 5, smartSubsample: true, loop: 0, delay })
+    .toBuffer();
+}
+
+/**
+ * Backgrounds keep their own aspect ratio (users pan and zoom them), trimmed to 16:9 if taller, and are
+ * never upscaled. Sharpness wins over smoothness: when an animation is too heavy, frames are dropped
+ * first (motion stays the same speed), then quality, and only as a last resort the size.
+ * `pixel` keeps pixel art at its native size; the banner scales it with crisp edges.
+ */
+async function writeBackground(name, buf, position = "center", pixel = false) {
   const meta = await sharp(buf, { animated: true }).metadata();
   const h0 = meta.pageHeight || meta.height;
-  const animated = (meta.pages || 1) > 1;
-  const w = Math.round(Math.min(animated ? 640 : 1600, meta.width, h0 * 4));
-  const img = sharp(buf, { animated: true }).resize(w, Math.round(w / 4), { fit: "cover", position: "centre" });
-  await img.webp({ quality: animated ? 50 : 82, effort: 6, smartSubsample: true }).toFile(`${OUT}/backgrounds/${name}.webp`);
-  await sharp(buf).resize(400, 100, { fit: "cover" }).webp({ quality: 72 }).toFile(`${OUT}/thumbs/${name}.webp`);
-  return { animated };
+  const frames = meta.pages || 1;
+  const animated = frames > 1;
+  const aspect = Math.max(meta.width / h0, TALLEST);
+  const crop = { fit: "cover", position: POSITIONS[position] ?? "centre" };
+  let width = pixel ? meta.width : Math.min(animated ? 800 : 1600, meta.width);
+  let out;
+
+  if (!animated) {
+    out = await sharp(buf).resize(width, Math.round(width / aspect), crop).webp({ quality: 84, effort: 6, smartSubsample: true }).toBuffer();
+  } else {
+    const delays = Array.from({ length: frames }, (_, i) => meta.delay?.[i] || 50);
+    const attempts = [
+      [1, 75],
+      [1, 65],
+      [2, 72],
+      [2, 62],
+      [3, 65],
+      [3, 55],
+    ];
+    for (;;) {
+      const height = Math.round(width / aspect);
+      const { data, info } = await sharp(buf, { animated: true })
+        .resize(width, height, { ...crop, kernel: pixel ? "nearest" : "lanczos3" })
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      for (const [step, quality] of attempts) {
+        out = await encodeFrames(data, info, height, delays, step, quality);
+        if (out.length <= MAX_BYTES) break;
+      }
+      if (out.length <= MAX_BYTES || width <= 480) break;
+      width = Math.round(width * 0.85);
+    }
+  }
+
+  await writeFile(`${OUT}/backgrounds/${name}.webp`, out);
+  await sharp(buf).resize(400, 100, crop).webp({ quality: 72 }).toFile(`${OUT}/thumbs/${name}.webp`);
+  return { animated, w: width, h: Math.round(width / aspect), ...(pixel ? { pixel: true } : {}) };
 }
 
 /** Icons: fit in 128px (badge icons render tiny, so 96/64). Keeps the original if it's already smaller. */
@@ -71,8 +127,8 @@ async function upsert(kind, name, buf, label) {
   const existing = list.find((e) => e.name === name);
   if (existing?.hash === hash && !args.force) return "unchanged";
 
-  const written = kind === "background" ? await writeBackground(name, buf) : await writeIcon(name, buf);
-  const entry = { name, label: existing?.label ?? label, ...written, hash };
+  const written = kind === "background" ? await writeBackground(name, buf, args.position, args.pixel) : await writeIcon(name, buf);
+  const entry = { name, label: existing?.label ?? label, pixel: undefined, ...written, hash };
   if (existing) Object.assign(existing, entry);
   else list.push(entry);
   return existing ? "updated" : "added";
