@@ -1,19 +1,23 @@
 {
-  "name": "banner-tester",
-  "version": "0.1.0",
+  "name": "profilyze",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "sync:assets": "node --env-file-if-exists=.env scripts/sync-assets.mjs"
   },
   "dependencies": {
-    "next": "15.3.3",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "mongodb": "^6.21.0",
+    "next": "15.5.28",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "react-icons": "^5.5.0",
-    "react-select": "^5.10.1"
+    "server-only": "^0.0.1",
+    "subset-font": "^2.9.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -21,10 +25,10 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "autoprefixer": "^10.4.21",
     "eslint": "^9",
-    "eslint-config-next": "15.3.3",
+    "eslint-config-next": "15.5.28",
     "postcss": "^8.5.4",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.1.8",
     "typescript": "^5"
   }
