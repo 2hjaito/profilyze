@@ -3,13 +3,17 @@ import manifest from "./assets.json";
 // Single source of truth for every asset a banner can use.
 // Files live in /public so the editor can load them by URL and the API can inline them.
 
-export type Background = { name: string; label: string; file: string; animated?: boolean };
+/** `w`/`h` are the stored image's size, used to pan and zoom it inside the banner. */
+export type Background = { name: string; label: string; file: string; animated?: boolean; w?: number; h?: number; pixel?: boolean };
 
 // Raster backgrounds and animated icons come from lib/assets.json, maintained by `npm run sync:assets`.
 export const backgrounds: Background[] = manifest.backgrounds.map((b) => ({
   name: b.name,
   label: b.label,
   animated: b.animated,
+  w: "w" in b ? (b.w as number) : undefined,
+  h: "h" in b ? (b.h as number) : undefined,
+  pixel: "pixel" in b ? Boolean(b.pixel) : undefined,
   file: `assets/backgrounds/${b.name}.webp`,
 }));
 

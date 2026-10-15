@@ -4,103 +4,289 @@
       "name": "itachi1",
       "label": "Itachi",
       "animated": false,
-      "hash": "1b816653053f"
+      "hash": "1b816653053f",
+      "w": 1600,
+      "h": 402
     },
     {
       "name": "itachi2",
       "label": "Itachi II",
       "animated": false,
-      "hash": "f36c3c046a0a"
+      "hash": "f36c3c046a0a",
+      "w": 1600,
+      "h": 402
     },
     {
       "name": "itachi4",
       "label": "Itachi III",
       "animated": false,
-      "hash": "9d175763825c"
+      "hash": "9d175763825c",
+      "w": 1600,
+      "h": 401
     },
     {
       "name": "itachi5",
       "label": "Itachi IV",
       "animated": false,
-      "hash": "fb83f4d1f8fa"
+      "hash": "fb83f4d1f8fa",
+      "w": 1600,
+      "h": 400
     },
     {
       "name": "itachi6",
       "label": "Itachi V",
       "animated": false,
-      "hash": "d3c2e4cc7737"
+      "hash": "d3c2e4cc7737",
+      "w": 1600,
+      "h": 400
     },
     {
       "name": "itasasu",
       "label": "Itachi & Sasuke",
       "animated": false,
-      "hash": "75eb3ce6f79b"
+      "hash": "75eb3ce6f79b",
+      "w": 1600,
+      "h": 401
     },
     {
       "name": "minato",
       "label": "Minato",
       "animated": false,
-      "hash": "15949bf1ad96"
+      "hash": "15949bf1ad96",
+      "w": 700,
+      "h": 315
     },
     {
       "name": "minato1",
       "label": "Minato II",
       "animated": false,
-      "hash": "ba97b019e64d"
+      "hash": "ba97b019e64d",
+      "w": 700,
+      "h": 175
     },
     {
       "name": "thean",
       "label": "Classic",
       "animated": false,
-      "hash": "12258778cd83"
+      "hash": "12258778cd83",
+      "w": 1584,
+      "h": 396
     },
     {
       "name": "sunsetFishing",
       "label": "Sunset Fishing",
       "animated": false,
-      "hash": "2ed2c56f8c79"
+      "hash": "2ed2c56f8c79",
+      "w": 1600,
+      "h": 900
     },
     {
       "name": "chillGaming",
       "label": "Chill Gaming",
       "animated": true,
-      "hash": "54f10863ee8b"
+      "hash": "54f10863ee8b",
+      "w": 500,
+      "h": 281
     },
     {
       "name": "blackCatNoise",
       "label": "Black Cat",
       "animated": true,
-      "hash": "16b6a350c089"
+      "hash": "16b6a350c089",
+      "w": 540,
+      "h": 299
     },
     {
       "name": "girlRain",
       "label": "Rainy Day",
       "animated": true,
-      "hash": "c566e66c520d"
+      "hash": "c566e66c520d",
+      "w": 500,
+      "h": 281
     },
     {
       "name": "koiPond",
       "label": "Koi Pond",
       "animated": true,
-      "hash": "5e71be8cd664"
+      "hash": "5e71be8cd664",
+      "w": 500,
+      "h": 281
     },
     {
       "name": "winScreen",
       "label": "Desktop",
       "animated": true,
-      "hash": "6262aedfe354"
+      "hash": "6262aedfe354",
+      "w": 800,
+      "h": 450
     },
     {
       "name": "relax",
       "label": "Relax",
       "animated": true,
-      "hash": "27e53746725d"
+      "hash": "27e53746725d",
+      "w": 800,
+      "h": 401
     },
     {
-      "name": "frog",
-      "label": "Frog Pond",
+      "name": "pixelRoom",
+      "label": "Pixel Room",
       "animated": true,
-      "hash": "4c6f165a182a"
+      "hash": "61e8e604dc40",
+      "w": 540,
+      "h": 304,
+      "pixel": true
+    },
+    {
+      "name": "starryNight",
+      "label": "Starry Night",
+      "animated": true,
+      "hash": "6cae13436671",
+      "w": 640,
+      "h": 360
+    },
+    {
+      "name": "cyberTerminal",
+      "label": "Cyber Terminal",
+      "animated": true,
+      "hash": "2549ca2b4b5f",
+      "w": 500,
+      "h": 271
+    },
+    {
+      "name": "lofiCity",
+      "label": "Lofi City",
+      "animated": true,
+      "hash": "2046c2eef306",
+      "w": 498,
+      "h": 278,
+      "pixel": true
+    },
+    {
+      "name": "blockyHills",
+      "label": "Blocky Hills",
+      "animated": true,
+      "hash": "50efd8a8ceb7",
+      "w": 450,
+      "h": 253
+    },
+    {
+      "name": "autumnForest",
+      "label": "Autumn Forest",
+      "animated": true,
+      "hash": "ac79cb2ef315",
+      "w": 540,
+      "h": 304
+    },
+    {
+      "name": "nightCoder",
+      "label": "Night Coder",
+      "animated": true,
+      "hash": "fde2330100b4",
+      "w": 800,
+      "h": 450
+    },
+    {
+      "name": "fireflies",
+      "label": "Fireflies",
+      "animated": true,
+      "hash": "5c7fb369a6a4",
+      "w": 540,
+      "h": 304
+    },
+    {
+      "name": "cozyStudio",
+      "label": "Cozy Studio",
+      "animated": true,
+      "hash": "68d57510bc55",
+      "w": 620,
+      "h": 220
+    },
+    {
+      "name": "neonArcade",
+      "label": "Neon Arcade",
+      "animated": true,
+      "hash": "37006de63f91",
+      "w": 1280,
+      "h": 480,
+      "pixel": true
+    },
+    {
+      "name": "ancientRuins",
+      "label": "Ancient Ruins",
+      "animated": true,
+      "hash": "6335ec595969",
+      "w": 800,
+      "h": 325
+    },
+    {
+      "name": "darkForest",
+      "label": "Dark Forest",
+      "animated": true,
+      "hash": "fe22ade11cc9",
+      "w": 1000,
+      "h": 563,
+      "pixel": true
+    },
+    {
+      "name": "sunsetWindow",
+      "label": "Sunset Window",
+      "animated": true,
+      "hash": "b1b0791850d0",
+      "w": 800,
+      "h": 450
+    },
+    {
+      "name": "rainyRuins",
+      "label": "Rainy Ruins",
+      "animated": true,
+      "hash": "f12c79491d6c",
+      "w": 847,
+      "h": 461,
+      "pixel": true
+    },
+    {
+      "name": "wanderer",
+      "label": "Wanderer",
+      "animated": true,
+      "hash": "0c8f2b882222",
+      "pixel": true,
+      "w": 1000,
+      "h": 540
+    },
+    {
+      "name": "nightRider",
+      "label": "Night Rider",
+      "animated": true,
+      "hash": "d5a16b01750c",
+      "pixel": true,
+      "w": 1020,
+      "h": 574
+    },
+    {
+      "name": "pixelDesk",
+      "label": "Pixel Desk",
+      "animated": true,
+      "hash": "3fa60058f649",
+      "pixel": true,
+      "w": 498,
+      "h": 280
+    },
+    {
+      "name": "sakuraLake",
+      "label": "Sakura Lake",
+      "animated": true,
+      "hash": "7581cdb24556",
+      "w": 800,
+      "h": 450
+    },
+    {
+      "name": "rooftopCat",
+      "label": "Rooftop Cat",
+      "animated": true,
+      "w": 711,
+      "h": 400,
+      "hash": "638ccbac6507"
     }
   ],
   "icons": [
