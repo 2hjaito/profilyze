@@ -145,11 +145,12 @@ Raster backgrounds and animated icons are listed in `lib/assets.json`. `npm run 
 
 ```bash
 npm run sync:assets                                                         # pull every background/technical from MongoDB
-npm run sync:assets -- --file frog.gif --background frog --label "Frog Pond"  # add a local file
+npm run sync:assets -- --file aurora.gif --background aurora --label "Aurora"  # add a local file
+npm run sync:assets -- --file city.gif --background pixelCity --label "Pixel City" --pixel  # pixel art
 npm run sync:assets -- --file rust.gif --icon rust --label "Rust"
 ```
 
-The script crops backgrounds to 4:1 (stills up to 1600 px, animations up to 640 px), shrinks icons to 128 px and keeps animations. Unchanged sources are skipped. Vector logos are SVGs in `public/assets/devicon`, registered in `lib/catalog.ts`.
+Backgrounds keep their aspect ratio and are trimmed only when taller than 16:9 (`--position top|center|bottom` picks which part stays). Users pan and zoom them in the editor. Stills go up to 1600 px wide and animations up to 800 px. When an animation exceeds about 1.2 MB, the script drops frames first so it stays sharp, then lowers quality, and shrinks it only as a last resort. `--pixel` keeps pixel art at its native size, and banners scale it with crisp edges. Icons are shrunk to 128 px. Unchanged sources are skipped. Put raw files in `public/news/`, which is git-ignored. Vector logos are SVGs in `public/assets/devicon`, registered in `lib/catalog.ts`.
 
 ### Code map
 
