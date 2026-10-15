@@ -1,12 +1,13 @@
 import "server-only";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import sharp from "sharp";
 import subsetFont from "subset-font";
 import { findFont, fontFile } from "../catalog";
 import { getGithubData } from "../github/fetch";
 import type { GithubData } from "../github/types";
 import { countView, readViews } from "../views";
-import { fontUsage, hasViewsStat, renderBanner } from "./render";
+import { fontUsage, hasViewsStat, renderBanner, type ImageSource } from "./render";
 import type { BannerConfig } from "./schema";
 
 const PUBLIC = path.join(process.cwd(), "public");
@@ -21,6 +22,39 @@ const MIME: Record<string, string> = {
 const toDataUri = (mime: string, buf: Buffer | Uint8Array) =>
   `data:${mime};base64,${Buffer.from(buf).toString("base64")}`;
 
+// Past this many frames the SVG would get too heavy; such images stay as-is (still animated outside Safari).
+const MAX_FRAMES = 300;
+
+/** Inlines an image, splitting animated GIF/WebP into frames (see Frames in render.ts). */
+async function toImageSource(mime: string, buf: Buffer): Promise<ImageSource> {
+  if (mime !== "image/gif" && mime !== "image/webp") return toDataUri(mime, buf);
+  try {
+    const img = sharp(buf, { animated: true, limitInputPixels: 1e8 });
+    const { pages = 1, pageHeight, width, delay = [], loop = 0 } = await img.metadata();
+    if (pages < 2 || pages > MAX_FRAMES || !pageHeight || !width) return toDataUri(mime, buf);
+    const raw = await img.ensureAlpha().raw().toBuffer();
+    const frameBytes = width * pageHeight * 4;
+    const hrefs = await Promise.all(
+      Array.from({ length: pages }, async (_, i) => {
+        const frame = raw.subarray(i * frameBytes, (i + 1) * frameBytes);
+        const encode = (opts: sharp.WebpOptions) =>
+          sharp(frame, { raw: { width, height: pageHeight, channels: 4 } }).webp(opts).toBuffer();
+        // Lossless wins on flat or pixel-art icons and is cheap at that size; photos stay lossy.
+        const candidates = await Promise.all([
+          encode({ quality: 75 }),
+          ...(width * pageHeight <= 256 * 256 ? [encode({ lossless: true })] : []),
+        ]);
+        return toDataUri("image/webp", candidates.reduce((a, b) => (b.length < a.length ? b : a)));
+      }),
+    );
+    // Browsers play delays of 10ms or less at 100ms; match that.
+    const delays = hrefs.map((_, i) => (delay[i] > 10 ? delay[i] : 100));
+    return { hrefs, delays, loop };
+  } catch {
+    return toDataUri(mime, buf);
+  }
+}
+
 // Assets never change at runtime, so each file is read and encoded once per instance.
 const fileCache = new Map<string, Promise<Buffer>>();
 function readPublic(file: string): Promise<Buffer> {
@@ -33,14 +67,14 @@ function readPublic(file: string): Promise<Buffer> {
   return p;
 }
 
-const assetCache = new Map<string, string>();
+const assetCache = new Map<string, ImageSource>();
 async function preloadAssets(files: string[]) {
   await Promise.all(
     files
       .filter((f) => !assetCache.has(f))
       .map(async (f) => {
         const mime = MIME[path.extname(f).slice(1)] ?? "application/octet-stream";
-        assetCache.set(f, toDataUri(mime, await readPublic(f)));
+        assetCache.set(f, await toImageSource(mime, await readPublic(f)));
       }),
   );
 }
@@ -70,7 +104,7 @@ async function fontFace(key: string, chars: string): Promise<string> {
 const MAX_REMOTE_BYTES = 3 * 1024 * 1024;
 
 /** Fetches a remote image and inlines it, since an SVG inside <img> can't load external files. */
-export async function fetchImageDataUri(url: string): Promise<string | null> {
+export async function fetchImage(url: string): Promise<ImageSource | null> {
   try {
     const { protocol } = new URL(url);
     if (protocol !== "https:" && protocol !== "http:") return null;
@@ -82,7 +116,7 @@ export async function fetchImageDataUri(url: string): Promise<string | null> {
     // raw.githubusercontent.com serves SVGs as text/plain
     const isSvg = type === "image/svg+xml" || /^\s*(<\?xml|<svg)/.test(buf.subarray(0, 256).toString());
     const mime = isSvg ? "image/svg+xml" : type.startsWith("image/") ? type : null;
-    return mime ? toDataUri(mime, buf) : null;
+    return mime ? toImageSource(mime, buf) : null;
   } catch {
     return null;
   }
@@ -121,8 +155,8 @@ export async function renderBannerSvg(
 
   const avatarEl = config.els.find((e) => e.type === "avatar" && !e.hidden);
   const [bgHref, avatarHref, faces] = await Promise.all([
-    config.bg.kind === "url" ? fetchImageDataUri(config.bg.url) : null,
-    avatarEl && github ? fetchImageDataUri(avatarUrl(github, Math.min(460, Math.ceil(avatarEl.s * 3)))) : null,
+    config.bg.kind === "url" ? fetchImage(config.bg.url) : null,
+    avatarEl && github ? fetchImage(avatarUrl(github, Math.min(460, Math.ceil(avatarEl.s * 3)))) : null,
     Promise.all([...fontUsage(config, github, views)].map(([key, chars]) => fontFace(key, chars))),
     preloadAssets([...files]),
   ]);

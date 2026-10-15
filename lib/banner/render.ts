@@ -5,12 +5,20 @@ import { findBackground, findFont, findIcon, glyphs, nearestWeight } from "../ca
 import { formatCount, type ContributionDay, type GithubData } from "../github/types";
 import { W, type BannerConfig, type BannerElement, type ElementOf, type StatKey } from "./schema";
 
+/**
+ * An animated GIF/WebP split into still frames. Safari shows only the first frame of an animated
+ * raster inside an SVG loaded via <img>, but it does run SMIL, so the API flips the frames itself.
+ */
+export type Frames = { hrefs: string[]; delays: number[]; loop: number };
+/** An href, or the frames of an animated image. */
+export type ImageSource = string | Frames;
+
 export type RenderContext = {
-  /** Resolves a /public-relative file (e.g. "assets/devicon/react.svg") to an href. */
-  asset: (file: string) => string;
-  /** Href for a `url` background; when missing the banner falls back to a gradient. */
-  bgHref?: string | null;
-  avatarHref?: string | null;
+  /** Resolves a /public-relative file (e.g. "assets/devicon/react.svg") to an image. */
+  asset: (file: string) => ImageSource;
+  /** Image for a `url` background; when missing the banner falls back to a gradient. */
+  bgHref?: ImageSource | null;
+  avatarHref?: ImageSource | null;
   /** @font-face rules to embed (server only; the editor loads fonts via CSS). */
   fontCss?: string;
   github?: GithubData | null;
@@ -23,6 +31,29 @@ export type RenderContext = {
 export const escapeXml = (s: string) => s.replace(/[<>&"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 const r1 = (n: number) => Math.round(n * 100) / 100;
+
+/** An <image>, or for frames one <image> per frame, each made visible in turn by SMIL. */
+function imageTag(src: ImageSource, attrs: string): string {
+  if (typeof src === "string") return `<image href="${src}" ${attrs}/>`;
+  const total = src.delays.reduce((a, b) => a + b, 0);
+  const repeat = src.loop === 0 ? `repeatCount="indefinite"` : `repeatCount="${src.loop}" fill="freeze"`;
+  let start = 0;
+  return src.hrefs
+    .map((href, i) => {
+      const end = start + src.delays[i];
+      const t = (ms: number) => r1((ms / total) * 10000) / 10000;
+      // Frame 0 stays visible by default so renderers without SMIL still show a still image.
+      const [values, times] =
+        i === 0
+          ? ["visible;hidden", `0;${t(end)}`]
+          : end >= total
+            ? ["hidden;visible", `0;${t(start)}`]
+            : ["hidden;visible;hidden", `0;${t(start)};${t(end)}`];
+      start = end;
+      return `<image href="${href}" ${attrs}${i ? ` visibility="hidden"` : ""}><animate attributeName="visibility" values="${values}" keyTimes="${times}" calcMode="discrete" dur="${total}ms" ${repeat}/></image>`;
+    })
+    .join("");
+}
 
 const STAT_VALUE: Record<Exclude<StatKey, "views">, (d: GithubData) => number | undefined> = {
   streak: (d) => d.current.length,
@@ -115,19 +146,18 @@ export function backgroundRect(config: BannerConfig) {
 function renderBackground(config: BannerConfig, ctx: RenderContext, defs: string[]) {
   const bg = config.bg;
   const H = config.h;
-  const image = (href: string) =>
-    `<image href="${href}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"/>`;
+  const image = (src: ImageSource) => imageTag(src, `width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"`);
 
   const placed = backgroundRect(config);
   if (placed) {
-    const href = ctx.asset(placed.preset.file);
+    const src = ctx.asset(placed.preset.file);
     const r = placed.rect;
     // Pixel art is stored at native size and scaled up with hard edges instead of blur.
     const crisp = placed.preset.pixel ? ` style="image-rendering:crisp-edges;image-rendering:pixelated"` : "";
     return r
       ? // slice, not none: if the stored size were ever off, the image crops instead of stretching
-        `<image href="${href}" x="${r1(r.x)}" y="${r1(r.y)}" width="${r1(r.w)}" height="${r1(r.h)}" preserveAspectRatio="xMidYMid slice"${crisp}/>`
-      : image(href);
+        imageTag(src, `x="${r1(r.x)}" y="${r1(r.y)}" width="${r1(r.w)}" height="${r1(r.h)}" preserveAspectRatio="xMidYMid slice"${crisp}`)
+      : image(src);
   }
   if (bg.kind === "url" && ctx.bgHref) return image(ctx.bgHref);
 
@@ -142,7 +172,7 @@ function iconImage(id: string, size: number, x: number, y: number, ctx: RenderCo
   const icon = findIcon(id);
   if (!icon) return "";
   const filter = inv ? ` filter="url(#pf-inv)"` : "";
-  return `<image href="${ctx.asset(icon.file)}" x="${r1(x)}" y="${r1(y)}" width="${r1(size)}" height="${r1(size)}"${filter}/>`;
+  return imageTag(ctx.asset(icon.file), `x="${r1(x)}" y="${r1(y)}" width="${r1(size)}" height="${r1(size)}"${filter}`);
 }
 
 function fontAttrs(fontId: string, weight: number) {
@@ -189,7 +219,7 @@ function renderElement(el: BannerElement, i: number, ctx: RenderContext, defs: s
       const id = `pf-av${i}`;
       defs.push(`<clipPath id="${id}"><circle cx="${rad}" cy="${rad}" r="${rad}"/></clipPath>`);
       const img = ctx.avatarHref
-        ? `<image href="${ctx.avatarHref}" width="${el.s}" height="${el.s}" clip-path="url(#${id})" preserveAspectRatio="xMidYMid slice"/>`
+        ? `<g clip-path="url(#${id})">${imageTag(ctx.avatarHref, `width="${el.s}" height="${el.s}" preserveAspectRatio="xMidYMid slice"`)}</g>`
         : `<circle cx="${rad}" cy="${rad}" r="${rad}" fill="#ffffff" fill-opacity="0.15"/>`;
       const ring = el.ring
         ? `<circle cx="${rad}" cy="${rad}" r="${r1(rad - el.s * 0.02)}" fill="none" stroke="${el.ring}" stroke-width="${r1(el.s * 0.04)}"/>`
