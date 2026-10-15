@@ -1,0 +1,27 @@
+{
+  "name": "profilyze-promo",
+  "private": true,
+  "description": "Promo video for Profilyze, built with Remotion",
+  "scripts": {
+    "capture": "node scripts/capture.mjs",
+    "music": "node scripts/music.mjs",
+    "studio": "remotion studio",
+    "render": "REMOTION_MOTION_BLUR_SAMPLES=5 remotion render Promo out/profilyze-promo-4k.mp4 --scale=2 --codec=h264 --crf=16 --concurrency=7",
+    "draft": "REMOTION_MOTION_BLUR_SAMPLES=1 remotion render Promo out/draft.mp4",
+    "render:1080": "ffmpeg -y -i out/profilyze-promo-4k.mp4 -vf scale=1920:1080:flags=lanczos -c:v libx264 -preset slow -crf 16 -pix_fmt yuv420p -c:a copy -movflags +faststart out/profilyze-promo-1080p.mp4",
+    "render:1080:direct": "REMOTION_MOTION_BLUR_SAMPLES=5 remotion render Promo out/profilyze-promo-1080p.mp4 --codec=h264 --crf=16 --concurrency=7"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.535",
+    "@remotion/google-fonts": "4.0.535",
+    "@remotion/motion-blur": "4.0.535",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "4.0.535"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "puppeteer-core": "^24.43.1",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,8 @@
+node_modules
+out
+.cache
+# Generated: npm run capture / npm run music
+public/capture
+public/music.wav
+# Reference videos (third-party, not ours to publish)
+public/*.mp4
