@@ -1,0 +1,199 @@
+{
+  "backgrounds": [
+    {
+      "name": "itachi1",
+      "label": "Itachi",
+      "animated": false,
+      "hash": "1b816653053f"
+    },
+    {
+      "name": "itachi2",
+      "label": "Itachi II",
+      "animated": false,
+      "hash": "f36c3c046a0a"
+    },
+    {
+      "name": "itachi4",
+      "label": "Itachi III",
+      "animated": false,
+      "hash": "9d175763825c"
+    },
+    {
+      "name": "itachi5",
+      "label": "Itachi IV",
+      "animated": false,
+      "hash": "fb83f4d1f8fa"
+    },
+    {
+      "name": "itachi6",
+      "label": "Itachi V",
+      "animated": false,
+      "hash": "d3c2e4cc7737"
+    },
+    {
+      "name": "itasasu",
+      "label": "Itachi & Sasuke",
+      "animated": false,
+      "hash": "75eb3ce6f79b"
+    },
+    {
+      "name": "minato",
+      "label": "Minato",
+      "animated": false,
+      "hash": "15949bf1ad96"
+    },
+    {
+      "name": "minato1",
+      "label": "Minato II",
+      "animated": false,
+      "hash": "ba97b019e64d"
+    },
+    {
+      "name": "thean",
+      "label": "Classic",
+      "animated": false,
+      "hash": "12258778cd83"
+    },
+    {
+      "name": "sunsetFishing",
+      "label": "Sunset Fishing",
+      "animated": false,
+      "hash": "2ed2c56f8c79"
+    },
+    {
+      "name": "chillGaming",
+      "label": "Chill Gaming",
+      "animated": true,
+      "hash": "54f10863ee8b"
+    },
+    {
+      "name": "blackCatNoise",
+      "label": "Black Cat",
+      "animated": true,
+      "hash": "16b6a350c089"
+    },
+    {
+      "name": "girlRain",
+      "label": "Rainy Day",
+      "animated": true,
+      "hash": "c566e66c520d"
+    },
+    {
+      "name": "koiPond",
+      "label": "Koi Pond",
+      "animated": true,
+      "hash": "5e71be8cd664"
+    },
+    {
+      "name": "winScreen",
+      "label": "Desktop",
+      "animated": true,
+      "hash": "6262aedfe354"
+    },
+    {
+      "name": "relax",
+      "label": "Relax",
+      "animated": true,
+      "hash": "27e53746725d"
+    },
+    {
+      "name": "frog",
+      "label": "Frog Pond",
+      "animated": true,
+      "hash": "4c6f165a182a"
+    }
+  ],
+  "icons": [
+    {
+      "name": "java",
+      "label": "Java",
+      "file": "icons/java.webp",
+      "animated": false,
+      "hash": "e00aa59cbb1b"
+    },
+    {
+      "name": "java-gif",
+      "label": "Java II",
+      "file": "icons/java-gif.webp",
+      "animated": true,
+      "hash": "0697ab2e44b4"
+    },
+    {
+      "name": "js",
+      "label": "JavaScript",
+      "file": "icons/js.webp",
+      "animated": true,
+      "hash": "b54f3f4812f6"
+    },
+    {
+      "name": "python",
+      "label": "Python",
+      "file": "icons/python.webp",
+      "animated": true,
+      "hash": "d112de4d5e2d"
+    },
+    {
+      "name": "gopher",
+      "label": "Gopher",
+      "file": "icons/gopher.gif",
+      "animated": true,
+      "hash": "d2adcf0109bd"
+    },
+    {
+      "name": "nodejs",
+      "label": "Node.js",
+      "file": "icons/nodejs.webp",
+      "animated": true,
+      "hash": "cccdd63826ce"
+    },
+    {
+      "name": "reactjs",
+      "label": "React",
+      "file": "icons/reactjs.webp",
+      "animated": true,
+      "hash": "950904688cac"
+    },
+    {
+      "name": "vuejs",
+      "label": "Vue",
+      "file": "icons/vuejs.webp",
+      "animated": true,
+      "hash": "4a89896bb4c3"
+    },
+    {
+      "name": "angular",
+      "label": "Angular",
+      "file": "icons/angular.webp",
+      "animated": true,
+      "hash": "b6e55f1d9dd0"
+    },
+    {
+      "name": "github",
+      "label": "GitHub",
+      "file": "icons/github.webp",
+      "animated": true,
+      "hash": "2ca27c7ffd51"
+    },
+    {
+      "name": "vsc",
+      "label": "VS Code",
+      "file": "icons/vsc.webp",
+      "animated": true,
+      "hash": "d4abaa452dd5"
+    },
+    {
+      "name": "fire",
+      "label": "Fire",
+      "file": "icons/fire.webp",
+      "animated": true,
+      "hash": "03bc896dc695"
+    },
+    {
+      "name": "sharingan",
+      "label": "Sharingan",
+      "file": "icons/sharingan.webp",
+      "animated": true,
+      "hash": "4670cca78757"
+    }
+  ]
+}
