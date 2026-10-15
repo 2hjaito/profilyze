@@ -2,6 +2,7 @@ import "server-only";
 import { after } from "next/server";
 import { CACHE, errorSvg, svgResponse } from "../http";
 import { registerBanner } from "../registry";
+import { visitorId } from "../views";
 import { encodeConfig } from "./codec";
 import { hasViewsStat } from "./render";
 import { needsGithub, renderBannerSvg } from "./server";
@@ -12,11 +13,14 @@ type Options = {
   c?: string;
   /** Gallery/preview render: no view counted, not recorded as usage. */
   preview?: boolean;
+  /** Request headers, used to count one view per visitor (see visitorId). */
+  headers?: Headers;
 };
 
-export async function bannerResponse(config: BannerConfig, { c, preview = false }: Options = {}) {
+export async function bannerResponse(config: BannerConfig, { c, preview = false, headers }: Options = {}) {
   try {
-    const svg = await renderBannerSvg(config, { preview });
+    const visitor = headers ? visitorId(headers) : null;
+    const svg = await renderBannerSvg(config, { preview, visitor });
 
     // Record who uses Profilyze. Demo banners with their own counter key (vk) aren't someone's profile.
     if (!preview && config.user && !config.vk) {

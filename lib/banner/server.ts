@@ -97,12 +97,18 @@ export function needsGithub(config: BannerConfig) {
   );
 }
 
-/** `preview` renders without counting a view (gallery thumbnails, previews). */
-export async function renderBannerSvg(config: BannerConfig, { preview = false } = {}): Promise<string> {
+/**
+ * `preview` renders without counting a view (gallery thumbnails, previews).
+ * `visitor` (see visitorId) lets repeat views from the same person within 30 minutes count once.
+ */
+export async function renderBannerSvg(
+  config: BannerConfig,
+  { preview = false, visitor = null }: { preview?: boolean; visitor?: string | null } = {},
+): Promise<string> {
   const viewsKey = config.vk ?? config.user;
   const [github, views] = await Promise.all([
     config.user && needsGithub(config) ? getGithubData(config.user).catch(() => null) : null,
-    viewsKey && hasViewsStat(config) ? (preview ? readViews(viewsKey) : countView(viewsKey)) : undefined,
+    viewsKey && hasViewsStat(config) ? (preview ? readViews(viewsKey) : countView(viewsKey, visitor)) : undefined,
   ]);
 
   // Collect every file the renderer will ask for, then load them in parallel.

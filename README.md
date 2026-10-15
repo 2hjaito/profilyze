@@ -113,6 +113,8 @@ Add `&preview=1` to a banner URL to render it without counting a view or recordi
 
 A **Profile views** stat counts each time the banner is displayed. Counts are kept per GitHub username in MongoDB (database `countview`, collection `bannerviews`).
 
+Repeat views from the same visitor (an anonymous hash of IP and user agent, never the raw IP) count once per 30 minutes. GitHub is the exception: it loads README images through its camo proxy, which hides the viewer, so GitHub views count on every load, like every GitHub view counter.
+
 Banners with a views counter are sent with `Cache-Control: no-cache`, so GitHub's image proxy fetches them, and counts them, on every view. Banners without a counter stay edge-cached. If the database is slow, the banner is still returned after at most 2.5 s, showing the last known count.
 
 The demos above use a separate counter key (`vk=profilyze-readme`), so visits to this README don't count as profile views.
