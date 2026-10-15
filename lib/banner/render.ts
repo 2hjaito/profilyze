@@ -3,7 +3,7 @@
 
 import { findBackground, findFont, findIcon, glyphs, nearestWeight } from "../catalog";
 import { formatCount, type ContributionDay, type GithubData } from "../github/types";
-import { H, W, type BannerConfig, type BannerElement, type ElementOf, type StatKey } from "./schema";
+import { W, type BannerConfig, type BannerElement, type ElementOf, type StatKey } from "./schema";
 
 export type RenderContext = {
   /** Resolves a /public-relative file (e.g. "assets/devicon/react.svg") to an href. */
@@ -65,6 +65,7 @@ export function renderBanner(config: BannerConfig, ctx: RenderContext): string {
   const defs: string[] = [];
   const body: string[] = [];
 
+  const H = config.h;
   if (ctx.fontCss) defs.push(`<style>${ctx.fontCss}</style>`);
   if (config.r > 0) defs.push(`<clipPath id="pf-clip"><rect width="${W}" height="${H}" rx="${config.r}"/></clipPath>`);
   defs.push(
@@ -96,14 +97,37 @@ export function renderBanner(config: BannerConfig, ctx: RenderContext): string {
   ].join("\n");
 }
 
+/** Where a preset background sits: covers the banner, zoomed, positioned by its focus point. */
+export function backgroundRect(config: BannerConfig) {
+  if (config.bg.kind !== "preset") return null;
+  const preset = findBackground(config.bg.name) ?? findBackground("itachi1")!;
+  if (!preset.w || !preset.h) return { preset, rect: null };
+  const H = config.h;
+  const scale = Math.max(W / preset.w, H / preset.h) * (config.bg.zoom ?? 1);
+  const w = preset.w * scale;
+  const h = preset.h * scale;
+  return {
+    preset,
+    rect: { x: ((W - w) * (config.bg.fx ?? 50)) / 100, y: ((H - h) * (config.bg.fy ?? 50)) / 100, w, h },
+  };
+}
+
 function renderBackground(config: BannerConfig, ctx: RenderContext, defs: string[]) {
   const bg = config.bg;
+  const H = config.h;
   const image = (href: string) =>
     `<image href="${href}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"/>`;
 
-  if (bg.kind === "preset") {
-    const preset = findBackground(bg.name) ?? findBackground("itachi1")!;
-    return image(ctx.asset(preset.file));
+  const placed = backgroundRect(config);
+  if (placed) {
+    const href = ctx.asset(placed.preset.file);
+    const r = placed.rect;
+    // Pixel art is stored at native size and scaled up with hard edges instead of blur.
+    const crisp = placed.preset.pixel ? ` style="image-rendering:crisp-edges;image-rendering:pixelated"` : "";
+    return r
+      ? // slice, not none: if the stored size were ever off, the image crops instead of stretching
+        `<image href="${href}" x="${r1(r.x)}" y="${r1(r.y)}" width="${r1(r.w)}" height="${r1(r.h)}" preserveAspectRatio="xMidYMid slice"${crisp}/>`
+      : image(href);
   }
   if (bg.kind === "url" && ctx.bgHref) return image(ctx.bgHref);
 
@@ -151,7 +175,8 @@ function renderElement(el: BannerElement, i: number, ctx: RenderContext, defs: s
       }
       const x = el.icon ? s * 1.45 : 0;
       const label = el.label
-        ? `<tspan dx="${r1(s * 0.3)}" ${fontAttrs(el.font, 400)} fill-opacity="0.75">${escapeXml(el.label)}</tspan>`
+        ? // A label starting with "-" attaches to the number: "25" + "-day streak" → "25-day streak".
+          `<tspan dx="${el.label.startsWith("-") ? 0 : r1(s * 0.3)}" ${fontAttrs(el.font, 400)} fill-opacity="0.75">${escapeXml(el.label)}</tspan>`
         : "";
       return `${icon}<text x="${r1(x)}" y="${r1(s * 0.87)}" font-size="${s}" ${fontAttrs(el.font, el.w)} fill="${el.color}" xml:space="preserve">${escapeXml(statValue(el, ctx.github, ctx.views))}${label}</text>`;
     }

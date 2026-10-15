@@ -80,7 +80,7 @@ export default function Gallery() {
                 src={`/api/banner?c=${item.c}&preview=1`}
                 alt={`${item.user}'s banner`}
                 loading="lazy"
-                className="aspect-[4/1] w-full"
+                className="h-auto w-full"
               />
             </a>
             <div className="flex items-center gap-3 px-4 py-3">

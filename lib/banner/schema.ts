@@ -2,8 +2,17 @@ import { z } from "zod";
 import { AUTHOR } from "../site";
 
 // Banner coordinate space. Everything is laid out in these units and the SVG scales cleanly.
+// The width is fixed; the height follows the chosen aspect ratio, from 5:1 up to 16:9 (taller is too much for a README).
 export const W = 1000;
 export const H = 250;
+export const MIN_H = 200;
+export const MAX_H = 562.5;
+export const RATIOS = [
+  { label: "4:1", h: 250 },
+  { label: "3:1", h: 333.3 },
+  { label: "2:1", h: 500 },
+  { label: "16:9", h: 562.5 },
+];
 
 const num = (min: number, max: number, fallback: number) =>
   z.number().catch(fallback).transform((n) => Math.min(max, Math.max(min, Math.round(n * 10) / 10)));
@@ -31,7 +40,7 @@ export type StatKey = (typeof STAT_KEYS)[number];
 const base = {
   id: str(16, "el"),
   x: num(-W, W * 2, 0),
-  y: num(-H, H * 2, 0),
+  y: num(-MAX_H, MAX_H * 2, 0),
   s: num(4, 400, 32), // primary size: font size, icon box, cell size or diameter
   o: num(0, 1, 1).optional(), // opacity
   hidden: z.boolean().optional().catch(undefined),
@@ -91,7 +100,14 @@ export const elementSchema = z.discriminatedUnion("type", [textEl, iconEl, icons
 
 const bgSchema = z
   .discriminatedUnion("kind", [
-    z.object({ kind: z.literal("preset"), name: str(40, "itachi1") }),
+    z.object({
+      kind: z.literal("preset"),
+      name: str(40, "itachi1"),
+      // Which part of the image shows (0–100 %, like CSS object-position) and how far it's zoomed in.
+      fx: num(0, 100, 50).optional(),
+      fy: num(0, 100, 50).optional(),
+      zoom: num(1, 4, 1).optional(),
+    }),
     z.object({ kind: z.literal("url"), url: str(500) }),
     z.object({
       kind: z.literal("gradient"),
@@ -116,6 +132,7 @@ export const configSchema = z.object({
     .optional()
     .catch(undefined),
   bg: bgSchema,
+  h: num(MIN_H, MAX_H, H),
   dim: num(0, 0.9, 0),
   r: num(0, 60, 0),
   els: z
@@ -140,6 +157,7 @@ export const DEFAULT_CONFIG: BannerConfig = {
   v: 1,
   user: AUTHOR.github,
   bg: { kind: "preset", name: "itachi1" },
+  h: H,
   dim: 0,
   r: 12,
   els: [
@@ -147,7 +165,8 @@ export const DEFAULT_CONFIG: BannerConfig = {
     { id: "role", type: "text", text: "FULLSTACK DEVELOPER", x: 164, y: 168, s: 24, font: "inter", w: 600, color: "#83ebf1", ls: 0.12 },
     { id: "tech", type: "icon", icon: "a:java", x: 850, y: 60, s: 140 },
     { id: "skills", type: "icons", icons: ["a:angular", "a:vuejs", "a:reactjs", "a:nodejs"], x: 540, y: 160, s: 34, gap: 10 },
-    { id: "streak", type: "stat", stat: "streak", icon: "a:fire", label: "day streak", x: 164, y: 30, s: 20, font: "inter", w: 700, color: "#ffffff", accent: "#ff9640" },
-    { id: "views", type: "stat", stat: "views", icon: "a:sharingan", label: "views", x: 340, y: 30, s: 20, font: "inter", w: 700, color: "#ffffff", accent: "#83ebf1" },
+    { id: "streak", type: "stat", stat: "streak", icon: "a:fire", label: "-day streak", x: 164, y: 30, s: 20, font: "inter", w: 700, color: "#ffffff", accent: "#ff9640" },
+    { id: "views", type: "stat", stat: "views", icon: "a:sharingan", label: "views", x: 344, y: 30, s: 20, font: "inter", w: 700, color: "#ffffff", accent: "#83ebf1" },
+    { id: "contribs", type: "stat", stat: "contribs", icon: "activity", label: "contributions", x: 471, y: 30, s: 20, font: "inter", w: 700, color: "#ffffff", accent: "#39d353" },
   ],
 };

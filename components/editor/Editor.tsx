@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FiAlertCircle, FiCheck, FiCornerUpLeft, FiCornerUpRight, FiGithub, FiLoader, FiPlus } from "react-icons/fi";
 import { decodeConfig } from "@/lib/banner/codec";
-import { DEFAULT_CONFIG, H, parseConfig, W, type BannerElement } from "@/lib/banner/schema";
+import { DEFAULT_CONFIG, parseConfig, W, type BannerElement } from "@/lib/banner/schema";
+import { findBackground } from "@/lib/catalog";
 import { templates } from "@/lib/banner/templates";
 import Canvas from "./Canvas";
 import EmbedPanel, { useEncoded } from "./EmbedPanel";
@@ -15,13 +16,13 @@ import { useGithub, type GithubState } from "./useGithub";
 
 const DRAFT_KEY = "profilyze:draft";
 
-const NEW_ELEMENT: Record<BannerElement["type"], (id: string) => BannerElement> = {
-  text: (id) => ({ id, type: "text", text: "New text", x: W / 2 - 80, y: H / 2 - 16, s: 32, font: "inter", w: 700, color: "#ffffff" }),
-  icon: (id) => ({ id, type: "icon", icon: "react", x: W / 2 - 40, y: H / 2 - 40, s: 80 }),
-  icons: (id) => ({ id, type: "icons", icons: ["javascript", "typescript", "react"], x: W / 2 - 60, y: H / 2 - 16, s: 32, gap: 8 }),
-  stat: (id) => ({ id, type: "stat", stat: "streak", icon: "flame", label: "day streak", x: W / 2 - 80, y: H / 2 - 10, s: 20, font: "inter", w: 700, color: "#ffffff", accent: "#ff9640" }),
-  graph: (id) => ({ id, type: "graph", weeks: 20, x: W / 2 - 170, y: H / 2 - 60, s: 12, color: "#39d353" }),
-  avatar: (id) => ({ id, type: "avatar", x: W / 2 - 60, y: H / 2 - 60, s: 120, ring: "#83ebf1" }),
+const NEW_ELEMENT: Record<BannerElement["type"], (id: string, H: number) => BannerElement> = {
+  text: (id, H) => ({ id, type: "text", text: "New text", x: W / 2 - 80, y: H / 2 - 16, s: 32, font: "inter", w: 700, color: "#ffffff" }),
+  icon: (id, H) => ({ id, type: "icon", icon: "react", x: W / 2 - 40, y: H / 2 - 40, s: 80 }),
+  icons: (id, H) => ({ id, type: "icons", icons: ["javascript", "typescript", "react"], x: W / 2 - 60, y: H / 2 - 16, s: 32, gap: 8 }),
+  stat: (id, H) => ({ id, type: "stat", stat: "streak", icon: "flame", label: "-day streak", x: W / 2 - 80, y: H / 2 - 10, s: 20, font: "inter", w: 700, color: "#ffffff", accent: "#ff9640" }),
+  graph: (id, H) => ({ id, type: "graph", weeks: 20, x: W / 2 - 170, y: H / 2 - 60, s: 12, color: "#39d353" }),
+  avatar: (id, H) => ({ id, type: "avatar", x: W / 2 - 60, y: H / 2 - 60, s: 120, ring: "#83ebf1" }),
 };
 
 const isTyping = (t: EventTarget | null) =>
@@ -68,7 +69,7 @@ export default function Editor() {
 
   const addElement = (type: BannerElement["type"]) => {
     const id = newId(type, config.els);
-    update((c) => ({ ...c, els: [...c.els, NEW_ELEMENT[type](id)] }));
+    update((c) => ({ ...c, els: [...c.els, NEW_ELEMENT[type](id, c.h)] }));
     setSelected(id);
     setAddOpen(false);
   };
@@ -101,6 +102,15 @@ export default function Editor() {
       [els[i], els[j]] = [els[j], els[i]];
       return { ...c, els };
     });
+
+  // Clicking anywhere outside the canvas and the editing panels drops the selection frame.
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      if (!(e.target instanceof Element) || !e.target.closest("[data-keep-selection]")) setSelected(null);
+    };
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, []);
 
   // Keyboard: nudge, delete, duplicate, undo/redo.
   const nudgeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -138,7 +148,7 @@ export default function Editor() {
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div data-keep-selection className="flex flex-wrap items-center gap-2">
         <div className="relative">
           <button
             type="button"
@@ -198,8 +208,12 @@ export default function Editor() {
       </div>
 
       {/* Canvas */}
-      <div className="sticky top-16 z-30 rounded-xl border border-line bg-surface p-3 shadow-[0_12px_24px_-12px_rgb(0_0_0/0.6)] sm:p-5">
-        <div className="bg-[conic-gradient(#1a1a1f_25%,#141418_0_50%,#1a1a1f_0_75%,#141418_0)] [background-size:16px_16px]">
+      <div data-keep-selection className="sticky top-16 z-30 rounded-xl border border-line bg-surface p-3 shadow-[0_12px_24px_-12px_rgb(0_0_0/0.6)] sm:p-5">
+        {/* Tall ratios are capped by viewport height so the sticky canvas leaves room to edit. */}
+        <div
+          className="mx-auto bg-[conic-gradient(#1a1a1f_25%,#141418_0_50%,#1a1a1f_0_75%,#141418_0)] [background-size:16px_16px]"
+          style={{ maxWidth: `calc(52vh * ${W / config.h})` }}
+        >
           <Canvas
             config={config}
             github={github.data}
@@ -207,11 +221,14 @@ export default function Editor() {
             selected={selected}
             onSelect={setSelected}
             onChange={(id, patch) => updateElement(id, patch, { transient: true })}
+            onBackground={(patch) =>
+              update((c) => (c.bg.kind === "preset" ? { ...c, bg: { ...c.bg, ...patch } } : c), { transient: true })
+            }
             onCommit={commit}
           />
         </div>
         <p className="mt-3 text-xs text-zinc-500">
-          Drag to move · corners to resize · arrows to nudge (⇧ ×10) · hold ⌥ to disable snapping
+          Drag to move · corners to resize · click the background to move or zoom it · arrows to nudge (⇧ ×10) · ⌥ disables snapping
           {github.status === "error" && <span className="text-red-400"> · {github.message}</span>}
           {github.status === "ok" && !github.full && (
             <span> · Stars, commits and PRs need a GITHUB_TOKEN on the server</span>
@@ -220,7 +237,15 @@ export default function Editor() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[240px_minmax(0,1fr)_minmax(0,400px)]">
+        <div data-keep-selection className="contents">
         <Layers
+          background={
+            config.bg.kind === "preset"
+              ? (findBackground(config.bg.name)?.label ?? "Image")
+              : config.bg.kind === "gradient"
+                ? "Gradient"
+                : "Custom image"
+          }
           els={config.els}
           selected={selected}
           onSelect={setSelected}
@@ -234,6 +259,8 @@ export default function Editor() {
             )
           }
         />
+        </div>
+        <div data-keep-selection className="contents">
         {selectedEl ? (
           <ElementInspector
             key={selectedEl.id}
@@ -245,6 +272,7 @@ export default function Editor() {
         ) : (
           <CanvasInspector config={config} onChange={(fn, key) => update(fn, { key })} />
         )}
+        </div>
         <EmbedPanel
           encoded={encoded}
           alt={alt}

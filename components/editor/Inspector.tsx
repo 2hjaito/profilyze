@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { FiCopy, FiTrash2 } from "react-icons/fi";
-import type { BannerConfig, BannerElement, ElementOf, StatKey } from "@/lib/banner/schema";
+import { RATIOS, type BannerConfig, type BannerElement, type ElementOf, type StatKey } from "@/lib/banner/schema";
 import { backgrounds, findFont, findIcon, fonts } from "@/lib/catalog";
 import IconPicker from "./IconPicker";
 import { ColorField, Field, IconButton, inputCls, NumberField, Panel, Segmented, Select, Slider, Toggle } from "./ui";
@@ -166,12 +166,12 @@ function StatProps({ el, onPatch }: { el: ElementOf<"stat">; onPatch: Patch }) {
         options={STAT_OPTIONS.map((o) => ({ value: o.value, label: o.token ? `${o.label} *` : o.label }))}
         onChange={(stat) => onPatch({ stat } as Partial<BannerElement>)}
       />
-      <Field label="Label">
+      <Field label="Label" hint='Start with "-" to attach it to the number, e.g. "-day streak" → 25-day streak.'>
         <input
           className={inputCls}
           value={el.label ?? ""}
           maxLength={30}
-          placeholder="day streak"
+          placeholder="-day streak"
           onChange={(e) => onPatch({ label: e.target.value || undefined } as Partial<BannerElement>, "label")}
         />
       </Field>
@@ -233,8 +233,17 @@ export function CanvasInspector({
   const [urlDraft, setUrlDraft] = useState(bg.kind === "url" ? bg.url : "");
   const setBg = (next: BannerConfig["bg"], key?: string) => onChange((c) => ({ ...c, bg: next }), key);
 
+  const ratio = RATIOS.reduce((best, r) => (Math.abs(r.h - config.h) < Math.abs(best.h - config.h) ? r : best));
   return (
     <Panel title="Canvas">
+      <div>
+        <span className="mb-1.5 block text-xs font-medium text-muted">Aspect ratio</span>
+        <Segmented
+          value={ratio.label}
+          onChange={(label) => onChange((c) => ({ ...c, h: RATIOS.find((r) => r.label === label)!.h }))}
+          options={RATIOS.map((r) => ({ value: r.label, label: r.label }))}
+        />
+      </div>
       <Segmented
         value={bg.kind}
         onChange={(kind) =>
@@ -260,7 +269,7 @@ export function CanvasInspector({
               key={b.name}
               type="button"
               aria-pressed={bg.name === b.name}
-              onClick={() => setBg({ kind: "preset", name: b.name })}
+              onClick={() => setBg({ kind: "preset", name: b.name, fx: bg.fx, fy: bg.fy, zoom: bg.zoom })}
               className={`relative overflow-hidden rounded-lg border text-left transition ${
                 bg.name === b.name ? "border-accent ring-1 ring-accent" : "border-line hover:border-zinc-500"
               }`}
@@ -276,6 +285,32 @@ export function CanvasInspector({
             </button>
           ))}
         </div>
+      )}
+
+      {bg.kind === "preset" && (
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <Slider
+              label="Background zoom"
+              value={bg.zoom ?? 1}
+              min={1}
+              max={3}
+              step={0.05}
+              format={(v) => `${Math.round(v * 100)}%`}
+              onChange={(zoom) => setBg({ ...bg, zoom }, "zoom")}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setBg({ kind: "preset", name: bg.name })}
+            className="rounded-md border border-line px-2.5 py-1.5 text-xs text-muted hover:border-zinc-500 hover:text-fg"
+          >
+            Reset position
+          </button>
+        </div>
+      )}
+      {bg.kind === "preset" && (
+        <p className="-mt-1 text-xs text-zinc-500">Click the background on the banner, then drag it or its yellow corners.</p>
       )}
 
       {bg.kind === "gradient" && (

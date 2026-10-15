@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { renderBanner } from "@/lib/banner/render";
-import { H, W, type BannerConfig, type BannerElement } from "@/lib/banner/schema";
+import { backgroundRect, renderBanner } from "@/lib/banner/render";
+import { W, type BannerConfig, type BannerElement } from "@/lib/banner/schema";
 import type { GithubData } from "@/lib/github/types";
 
 type Box = { x: number; y: number; w: number; h: number };
@@ -15,12 +15,17 @@ type Props = {
   selected: string | null;
   onSelect: (id: string | null) => void;
   onChange: (id: string, patch: Partial<BannerElement>) => void;
+  /** Background image moves (focus point in %) and zoom, from dragging it or its corners. */
+  onBackground: (patch: { fx?: number; fy?: number; zoom?: number }) => void;
   onCommit: () => void;
 };
 
 const SNAP = 6; // canvas units
 
-export default function Canvas({ config, github, views, selected, onSelect, onChange, onCommit }: Props) {
+export const BG_ID = "__background";
+
+export default function Canvas({ config, github, views, selected, onSelect, onChange, onBackground, onCommit }: Props) {
+  const H = config.h;
   const wrapRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<SVGSVGElement>(null);
   const [boxes, setBoxes] = useState<Record<string, Box>>({});
@@ -76,7 +81,7 @@ export default function Canvas({ config, github, views, selected, onSelect, onCh
   const toCanvas = useCallback((e: { clientX: number; clientY: number }) => {
     const rect = overlayRef.current!.getBoundingClientRect();
     return { x: ((e.clientX - rect.left) / rect.width) * W, y: ((e.clientY - rect.top) / rect.height) * H };
-  }, []);
+  }, [H]);
 
   /** Snaps a moving box to the canvas and other elements; returns the offset to apply and guides to draw. */
   const snap = useCallback(
@@ -105,8 +110,40 @@ export default function Canvas({ config, github, views, selected, onSelect, onCh
       if (sy) g.push({ axis: "y", at: sy.at });
       return { dx: sx?.d ?? 0, dy: sy?.d ?? 0, guides: g };
     },
-    [boxes],
+    [boxes, H],
   );
+
+  const placed = backgroundRect(config);
+  const pannable = !!placed?.rect && (placed.rect.w > W + 0.5 || placed.rect.h > H + 0.5);
+
+  const clampPct = (n: number) => Math.round(Math.min(100, Math.max(0, n)) * 10) / 10;
+
+  /** Click empty canvas to select the background; drag to move the image (its focus point follows). */
+  const startPan = (e: React.PointerEvent) => {
+    onSelect(placed?.rect ? BG_ID : null);
+    if (!pannable || !placed?.rect || config.bg.kind !== "preset") return;
+    e.preventDefault();
+    const start = toCanvas(e);
+    const { w, h } = placed.rect;
+    const fx0 = config.bg.fx ?? 50;
+    const fy0 = config.bg.fy ?? 50;
+    const target = e.currentTarget as Element;
+    target.setPointerCapture(e.pointerId);
+    const move = (ev: PointerEvent) => {
+      const p = toCanvas(ev);
+      onBackground({
+        fx: w > W ? clampPct(fx0 + ((p.x - start.x) / (W - w)) * 100) : fx0,
+        fy: h > H ? clampPct(fy0 + ((p.y - start.y) / (H - h)) * 100) : fy0,
+      });
+    };
+    const up = () => {
+      target.removeEventListener("pointermove", move as EventListener);
+      target.removeEventListener("pointerup", up);
+      onCommit();
+    };
+    target.addEventListener("pointermove", move as EventListener);
+    target.addEventListener("pointerup", up);
+  };
 
   const startDrag = (e: React.PointerEvent, el: BannerElement) => {
     e.preventDefault();
@@ -170,6 +207,42 @@ export default function Canvas({ config, github, views, selected, onSelect, onCh
     target.addEventListener("pointerup", up);
   };
 
+  /** Drag a corner of the background image: zoom around the opposite corner, keeping its aspect ratio. */
+  const startBgResize = (e: React.PointerEvent, corner: [number, number]) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!placed?.rect || config.bg.kind !== "preset") return;
+    const r0 = placed.rect;
+    const z0 = config.bg.zoom ?? 1;
+    const target = e.currentTarget as Element;
+    target.setPointerCapture(e.pointerId);
+    const ax = r0.x + (corner[0] < 0 ? r0.w : 0);
+    const ay = r0.y + (corner[1] < 0 ? r0.h : 0);
+    const diag = r0.w * r0.w + r0.h * r0.h;
+    const move = (ev: PointerEvent) => {
+      const p = toCanvas(ev);
+      const ratio = ((p.x - ax) * corner[0] * r0.w + (p.y - ay) * corner[1] * r0.h) / diag;
+      const zoom = Math.min(4, Math.max(1, z0 * ratio));
+      const r = zoom / z0;
+      const w = r0.w * r;
+      const h = r0.h * r;
+      const x = ax - (ax - r0.x) * r;
+      const y = ay - (ay - r0.y) * r;
+      onBackground({
+        zoom: Math.round(zoom * 100) / 100,
+        fx: w > W + 0.5 ? clampPct((x / (W - w)) * 100) : 50,
+        fy: h > H + 0.5 ? clampPct((y / (H - h)) * 100) : 50,
+      });
+    };
+    const up = () => {
+      target.removeEventListener("pointermove", move as EventListener);
+      target.removeEventListener("pointerup", up);
+      onCommit();
+    };
+    target.addEventListener("pointermove", move as EventListener);
+    target.addEventListener("pointerup", up);
+  };
+
   const k = 1 / scale; // one screen pixel in canvas units
   const sel = selected ? config.els.find((e) => e.id === selected) : undefined;
   const selBox = selected ? boxes[selected] : undefined;
@@ -180,8 +253,8 @@ export default function Canvas({ config, github, views, selected, onSelect, onCh
       <svg
         ref={overlayRef}
         viewBox={`0 0 ${W} ${H}`}
-        className="absolute inset-0 h-full w-full touch-none overflow-visible"
-        onPointerDown={() => onSelect(null)}
+        className={`absolute inset-0 h-full w-full touch-none overflow-visible ${pannable ? "cursor-grab active:cursor-grabbing" : ""}`}
+        onPointerDown={startPan}
       >
         {config.els.map((el) => {
           const b = boxes[el.id];
@@ -204,6 +277,44 @@ export default function Canvas({ config, github, views, selected, onSelect, onCh
             />
           );
         })}
+
+        {selected === BG_ID && placed?.rect && (
+          <g>
+            <rect
+              x={placed.rect.x}
+              y={placed.rect.y}
+              width={placed.rect.w}
+              height={placed.rect.h}
+              fill="none"
+              stroke="#facc15"
+              strokeWidth={1.5 * k}
+              strokeDasharray={`${6 * k} ${4 * k}`}
+              pointerEvents="none"
+            />
+            {(
+              [
+                [-1, -1],
+                [1, -1],
+                [-1, 1],
+                [1, 1],
+              ] as [number, number][]
+            ).map(([cx, cy]) => (
+              <rect
+                key={`bg${cx}${cy}`}
+                x={placed.rect!.x + (cx > 0 ? placed.rect!.w : 0) - 6 * k}
+                y={placed.rect!.y + (cy > 0 ? placed.rect!.h : 0) - 6 * k}
+                width={12 * k}
+                height={12 * k}
+                rx={2 * k}
+                fill="#facc15"
+                stroke="#713f12"
+                strokeWidth={1.5 * k}
+                className={cx === cy ? "cursor-nwse-resize" : "cursor-nesw-resize"}
+                onPointerDown={(e) => startBgResize(e, [cx, cy])}
+              />
+            ))}
+          </g>
+        )}
 
         {guides.map((g, i) =>
           g.axis === "x" ? (

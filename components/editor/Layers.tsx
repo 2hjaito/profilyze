@@ -1,7 +1,8 @@
 "use client";
 
-import { FiArrowDown, FiArrowUp, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiArrowDown, FiArrowUp, FiEye, FiEyeOff, FiImage } from "react-icons/fi";
 import type { BannerElement } from "@/lib/banner/schema";
+import { BG_ID } from "./Canvas";
 import { TYPE_LABEL } from "./Inspector";
 import { Panel } from "./ui";
 
@@ -9,6 +10,7 @@ const describe = (el: BannerElement) =>
   el.type === "text" ? el.text || "Empty text" : el.type === "stat" ? `${TYPE_LABEL.stat}: ${el.stat}` : TYPE_LABEL[el.type];
 
 export default function Layers({
+  background,
   els,
   selected,
   onSelect,
@@ -16,6 +18,8 @@ export default function Layers({
   onMove,
   action,
 }: {
+  /** Name of the background, listed as the bottom layer. */
+  background: string;
   els: BannerElement[];
   selected: string | null;
   onSelect: (id: string) => void;
@@ -27,7 +31,7 @@ export default function Layers({
   const ordered = [...els].reverse();
   return (
     <Panel title="Layers" action={action}>
-      {ordered.length === 0 && <p className="text-xs text-muted">No elements yet.</p>}
+
       <ul className="-mx-2 space-y-0.5">
         {ordered.map((el, i) => (
           <li key={el.id}>
@@ -53,6 +57,18 @@ export default function Layers({
             </div>
           </li>
         ))}
+        <li className="mt-1 border-t border-line pt-1">
+          <button
+            type="button"
+            onClick={() => onSelect(BG_ID)}
+            className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm ${
+              selected === BG_ID ? "bg-amber-400/10 text-fg" : "text-muted hover:bg-surface-2 hover:text-fg"
+            }`}
+          >
+            <FiImage className="shrink-0 text-amber-300" />
+            <span className="min-w-0 flex-1 truncate">Background · {background}</span>
+          </button>
+        </li>
       </ul>
     </Panel>
   );
