@@ -213,6 +213,29 @@ async function mobileReadme(browser) {
   await page.close();
 }
 
+// The banners featured in the 3D banner scene: real designs from the live site, shot as 2x stills.
+const SITE = process.env.SITE ?? "https://profilyze.vercel.app";
+const FEATURED = {
+  "featured-1":
+    "nZFRb9owEMe_Cvr39RTZCU3pvVUbm6YxOm2j0lT1wQQHXFIH2YYWIb57ZZNCt3XStLyc5dz597u7HTZgSVh77cDIF_fKhBaE6Ry8w9LYGRgrp70OIFj1oMEwQVULI7EnLMD5uSDMzANYEBxY5gTdePDtDiaWpyrCE7gYZCVhC5ZykF0QPPg8XYXtKj4c9FPEpMAYf5z8HI57N1fj3pfJ9ScQ6tbGH8YG7UB4BA-EIFRt00b9szp92FNHdm3zOzkXl1k_kfP-X7gfJqPR9x9X7z733g9vhqPrr8Nvb7LLX9iDQk9rCUJsXWTyKOGXpmn8QaMvZKQnD5ksipOFqVob8w6Rb6FY2fm6UZGneLPW9z6dnFZV6M62ncXrO8JcrcBSnLjBabXsuIfmC3HoXByZPqjYeQqvSqICGIpr4-IEGzXVDRgzte0dk_6cyMVb2yCoqtIp9ayuL8u-OC1oY_RjN5q8LLPinyxfio6SfqGcsXNlX5m-JP2HZLfJ_d3-GQ",
+  "featured-2":
+    "pdHNjoMgFAXgV5mcbm-M_6b3MWbbdIGKSuuAEezUNH33CWobZzGrYcMNHOADHriBI8Jk5QhG3F2EcgaEsgU_cFW6BmMYpZUOBC2-JBhatZ37VLUcQWju4CwkNDM4z4L0SejASZIECaFWX-CQMIKjmCB7Cz49oPyu9qr63oJwB-dpEuSEGRwf46AgWHCSEtw8-ANVZbRPrj2fIFjoduqFBwi-TfJil2qUonJbrU39Gm7N0Mk12yrXTeVSbpPD7DqjcSa0YgBH4ZNeQjdKcV2F2TENokUYFUG2AOPwDbRO-PdZut067wVDcKNGCUIvStmDUYv54x1qjPaLlHYL8RtchCGhMr3xf3JoluapVSWX6KFpjnkaYgcVLsIfmspoN6rS7jyVUzfl5p1oC01OrS99BxdFuP3Jrxv_g3t-_gA",
+};
+
+async function featuredBanners(browser) {
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1100, height: 600, deviceScaleFactor: 2 });
+  for (const [name, c] of Object.entries(FEATURED)) {
+    // preview=1: render without counting a view
+    await page.setContent(`<html><body style="margin:0;background:transparent"><img id="i" src="${SITE}/api/banner?c=${c}&preview=1"></body></html>`);
+    await page.waitForFunction(() => document.getElementById("i").complete && document.getElementById("i").naturalWidth > 0, { timeout: 90000 });
+    await sleep(500);
+    await (await page.$("#i")).screenshot({ path: `${OUT}${name}.png`, omitBackground: true });
+    console.log("  featured", name);
+  }
+  await page.close();
+}
+
 /** Banners and cards as crisp 2x PNGs. */
 async function stills(browser, demos) {
   const page = await browser.newPage();
@@ -247,7 +270,7 @@ await browser.defaultBrowserContext().overridePermissions(BASE, ["clipboard-read
 try {
   // ONLY=stills,mobile,editor,readme re-captures just those.
   const only = process.env.ONLY?.split(",");
-  const steps = { stills: () => stills(browser, demos), mobile: () => mobileReadme(browser), editor: () => recordEditor(browser), readme: () => recordReadme(browser) };
+  const steps = { banners: () => featuredBanners(browser), stills: () => stills(browser, demos), mobile: () => mobileReadme(browser), editor: () => recordEditor(browser), readme: () => recordReadme(browser) };
   for (const [name, run] of Object.entries(steps)) {
     if (only && !only.includes(name)) continue;
     console.log(`${name}…`);
