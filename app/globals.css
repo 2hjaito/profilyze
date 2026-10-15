@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+/* Banner fonts: the same files the API subsets, so the editor measures text exactly like the output. */
+@font-face { font-family: 'Inter'; font-weight: 400; font-display: swap; src: url('/fonts/inter-400.ttf') format('truetype'); }
+@font-face { font-family: 'Inter'; font-weight: 600; font-display: swap; src: url('/fonts/inter-600.ttf') format('truetype'); }
+@font-face { font-family: 'Inter'; font-weight: 700; font-display: swap; src: url('/fonts/inter-700.ttf') format('truetype'); }
+@font-face { font-family: 'Inter'; font-weight: 800; font-display: swap; src: url('/fonts/inter-800.ttf') format('truetype'); }
+@font-face { font-family: 'Space Grotesk'; font-weight: 500; font-display: swap; src: url('/fonts/space-grotesk-500.ttf') format('truetype'); }
+@font-face { font-family: 'Space Grotesk'; font-weight: 700; font-display: swap; src: url('/fonts/space-grotesk-700.ttf') format('truetype'); }
+@font-face { font-family: 'JetBrains Mono'; font-weight: 400; font-display: swap; src: url('/fonts/jetbrains-mono-400.ttf') format('truetype'); }
+@font-face { font-family: 'JetBrains Mono'; font-weight: 700; font-display: swap; src: url('/fonts/jetbrains-mono-700.ttf') format('truetype'); }
+@font-face { font-family: 'Bebas Neue'; font-weight: 400; font-display: swap; src: url('/fonts/bebas-neue-400.ttf') format('truetype'); }
+@font-face { font-family: 'Allerta'; font-weight: 400; font-display: swap; src: url('/fonts/allerta-400.ttf') format('truetype'); }
+@font-face { font-family: 'AR One Sans'; font-weight: 400; font-display: swap; src: url('/fonts/ar-one-sans-400.ttf') format('truetype'); }
+@font-face { font-family: 'AR One Sans'; font-weight: 700; font-display: swap; src: url('/fonts/ar-one-sans-700.ttf') format('truetype'); }
+
+@theme inline {
+  --color-bg: #09090b;
+  --color-surface: #111114;
+  --color-surface-2: #18181c;
+  --color-line: #26262b;
+  --color-fg: #ededef;
+  --color-muted: #9b9ba4;
+  --color-accent: #83ebf1;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-accent) 35%, transparent);
+}
+
+/* Tailwind v4 resets buttons to the default cursor; restore the pointer on everything clickable. */
+@layer base {
+  button:not(:disabled),
+  [role="button"],
+  [role="switch"],
+  a[href],
+  select,
+  summary,
+  label:has(> input[type="color"]),
+  input[type="color"],
+  input[type="range"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  input:disabled {
+    cursor: not-allowed;
+  }
+}
