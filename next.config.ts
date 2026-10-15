@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
     "/api/banner": ["./public/assets/**/*", "./public/fonts/*"],
     "/api/profile/banner": ["./public/assets/**/*", "./public/fonts/*"],
     "/api/github/[card]": ["./public/fonts/inter-*"],
+    "/api/stats/users": ["./public/fonts/inter-*"],
   },
 };
 

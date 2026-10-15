@@ -5,7 +5,7 @@ import subsetFont from "subset-font";
 import { findFont, fontFile } from "../catalog";
 import { getGithubData } from "../github/fetch";
 import type { GithubData } from "../github/types";
-import { countView } from "../views";
+import { countView, readViews } from "../views";
 import { fontUsage, hasViewsStat, renderBanner } from "./render";
 import type { BannerConfig } from "./schema";
 
@@ -97,10 +97,12 @@ export function needsGithub(config: BannerConfig) {
   );
 }
 
-export async function renderBannerSvg(config: BannerConfig): Promise<string> {
+/** `preview` renders without counting a view (gallery thumbnails, previews). */
+export async function renderBannerSvg(config: BannerConfig, { preview = false } = {}): Promise<string> {
+  const viewsKey = config.vk ?? config.user;
   const [github, views] = await Promise.all([
     config.user && needsGithub(config) ? getGithubData(config.user).catch(() => null) : null,
-    (config.vk ?? config.user) && hasViewsStat(config) ? countView(config.vk ?? config.user!) : undefined,
+    viewsKey && hasViewsStat(config) ? (preview ? readViews(viewsKey) : countView(viewsKey)) : undefined,
   ]);
 
   // Collect every file the renderer will ask for, then load them in parallel.

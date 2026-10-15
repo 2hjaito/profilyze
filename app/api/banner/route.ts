@@ -14,5 +14,5 @@ export async function GET(req: NextRequest) {
   } catch {
     return svgResponse(errorSvg("Invalid banner config"), CACHE.none, 400);
   }
-  return bannerResponse(config);
+  return bannerResponse(config, { c, preview: req.nextUrl.searchParams.has("preview") });
 }
