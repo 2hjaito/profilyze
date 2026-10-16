@@ -75,13 +75,7 @@ export default function Gallery() {
         {items.map((item) => (
           <article key={item.user} className="overflow-hidden rounded-xl border border-line bg-surface">
             <a href={`/?c=${item.c}`} className="block bg-bg" title="Open in the editor">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`/api/banner?c=${item.c}&preview=1`}
-                alt={`${item.user}'s banner`}
-                loading="lazy"
-                className="h-auto w-full"
-              />
+              <BannerImage src={`/api/banner?c=${item.c}&preview=1`} alt={`${item.user}'s banner`} />
             </a>
             <div className="flex items-center gap-3 px-4 py-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -123,6 +117,29 @@ export default function Gallery() {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Banner preview with a pulsing 4:1 placeholder until the image arrives, then its own height. */
+function BannerImage({ src, alt }: { src: string; alt: string }) {
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+  // A cached image can finish before hydration attaches onLoad, so check on mount too.
+  const ref = useCallback((img: HTMLImageElement | null) => {
+    if (img?.complete) setStatus(img.naturalWidth ? "loaded" : "error");
+  }, []);
+  return (
+    <div className={status === "loaded" ? "" : `relative aspect-[4/1] bg-surface-2 ${status === "loading" ? "animate-pulse" : ""}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        ref={ref}
+        src={src}
+        alt={alt}
+        loading="lazy"
+        onLoad={() => setStatus("loaded")}
+        onError={() => setStatus("error")}
+        className={status === "loaded" ? "h-auto w-full" : "absolute inset-0 h-full w-full opacity-0"}
+      />
     </div>
   );
 }
