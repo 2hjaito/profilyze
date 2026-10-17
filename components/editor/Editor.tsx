@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FiAlertCircle, FiCheck, FiCornerUpLeft, FiCornerUpRight, FiGithub, FiLoader, FiPlus } from "react-icons/fi";
 import { decodeConfig } from "@/lib/banner/codec";
-import { DEFAULT_CONFIG, parseConfig, W, type BannerElement } from "@/lib/banner/schema";
+import { DEFAULT_CONFIG, parseConfig, W, withUser, type BannerElement } from "@/lib/banner/schema";
 import { findBackground } from "@/lib/catalog";
 import { templates } from "@/lib/banner/templates";
 import Canvas from "./Canvas";
-import EmbedPanel, { useEncoded } from "./EmbedPanel";
+import EmbedPanel, { useBannerQuery } from "./EmbedPanel";
 import { CanvasInspector, ElementInspector, TYPE_LABEL } from "./Inspector";
 import Layers from "./Layers";
 import { newId, useBannerHistory } from "./state";
@@ -35,17 +35,18 @@ export default function Editor() {
   const [addOpen, setAddOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const github = useGithub(config.user);
-  const encoded = useEncoded(config);
+  const query = useBannerQuery(config);
 
   // Load from ?c= (links from READMEs), else the last draft.
   useEffect(() => {
     (async () => {
-      const c = new URLSearchParams(window.location.search).get("c");
+      const params = new URLSearchParams(window.location.search);
+      const c = params.get("c");
       try {
         // Load the draft first so a shared ?c= design replaces it but stays one undo away.
         const draft = localStorage.getItem(DRAFT_KEY);
         if (draft) load(parseConfig(JSON.parse(draft)));
-        if (c) load(parseConfig(await decodeConfig(c)));
+        if (c) load(withUser(parseConfig(await decodeConfig(c)), params.get("u")));
       } catch {
         /* fall back to the default banner */
       }
@@ -274,7 +275,7 @@ export default function Editor() {
         )}
         </div>
         <EmbedPanel
-          encoded={encoded}
+          query={query}
           alt={alt}
           onImport={(c) => {
             load(c);

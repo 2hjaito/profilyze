@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { decodeConfig } from "@/lib/banner/codec";
 import { bannerResponse } from "@/lib/banner/route-helpers";
-import { parseConfig } from "@/lib/banner/schema";
+import { parseConfig, withUser } from "@/lib/banner/schema";
 import { CACHE, errorSvg, svgResponse } from "@/lib/http";
 
 export async function GET(req: NextRequest) {
@@ -14,5 +14,8 @@ export async function GET(req: NextRequest) {
   } catch {
     return svgResponse(errorSvg("Invalid banner config"), CACHE.none, 400);
   }
-  return bannerResponse(config, { c, preview: req.nextUrl.searchParams.has("preview"), headers: req.headers });
+  const q = req.nextUrl.searchParams;
+  const resolved = withUser(config, q.get("u"));
+  // With a `u` override, `c` no longer matches the banner, so let the registry re-encode it.
+  return bannerResponse(resolved, { c: resolved === config ? c : undefined, preview: req.nextUrl.searchParams.has("preview"), headers: req.headers });
 }

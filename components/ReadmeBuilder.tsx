@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { FiCheck, FiCopy, FiDownload, FiEdit2 } from "react-icons/fi";
 import { encodeConfig } from "@/lib/banner/codec";
-import { DEFAULT_CONFIG, parseConfig, type BannerConfig } from "@/lib/banner/schema";
+import { bannerQuery, DEFAULT_CONFIG, parseConfig, type BannerConfig } from "@/lib/banner/schema";
 import { themes } from "@/lib/cards/render";
 import { vectorIcons } from "@/lib/catalog";
 import { AUTHOR, SITE_URL } from "@/lib/site";
@@ -58,8 +58,8 @@ const BADGES: { key: keyof Links; label: string; color: string; logo: string; hr
 ];
 
 /** The banner from the editor's saved draft (or the default), with this README's username. */
-function useBannerC(user: string) {
-  const [c, setC] = useState("");
+function useBannerQs(user: string) {
+  const [qs, setQs] = useState("");
   useEffect(() => {
     let alive = true;
     let config: BannerConfig = DEFAULT_CONFIG;
@@ -69,15 +69,16 @@ function useBannerC(user: string) {
     } catch {
       /* use default */
     }
-    encodeConfig({ ...config, user: user || config.user, vk: undefined }).then((e) => alive && setC(e));
+    const banner = { ...config, user: user || config.user, vk: undefined };
+    encodeConfig(banner).then((e) => alive && setQs(bannerQuery(banner, e)));
     return () => {
       alive = false;
     };
   }, [user]);
-  return c;
+  return qs;
 }
 
-function buildMarkdown(s: ReadmeState, bannerC: string) {
+function buildMarkdown(s: ReadmeState, bannerQs: string) {
   const user = s.user.trim();
   const name = s.name.trim() || user || "there";
   const center = s.align === "center";
@@ -86,8 +87,8 @@ function buildMarkdown(s: ReadmeState, bannerC: string) {
   const card = (kind: string) =>
     `${SITE_URL}/api/github/${kind}?user=${encodeURIComponent(user)}&theme=${s.theme}`;
 
-  if (s.banner && bannerC) {
-    out.push(`[![${name}](${SITE_URL}/api/banner?c=${bannerC})](${SITE_URL}/?c=${bannerC})`);
+  if (s.banner && bannerQs) {
+    out.push(`[![${name}](${SITE_URL}/api/banner?${bannerQs})](${SITE_URL}/?${bannerQs})`);
   }
 
   if (s.greeting.trim()) {
@@ -139,7 +140,7 @@ export default function ReadmeBuilder() {
   const [s, setS, loaded] = usePersistentState<ReadmeState>("profilyze:readme", INITIAL);
   const set = <K extends keyof ReadmeState>(k: K, v: ReadmeState[K]) => setS((p) => ({ ...p, [k]: v }));
   const setLink = (k: keyof Links, v: string) => setS((p) => ({ ...p, links: { ...p.links, [k]: v } }));
-  const bannerC = useBannerC(s.user.trim());
+  const bannerQs = useBannerQs(s.user.trim());
 
   // Default the username to the one used in the banner editor.
   useEffect(() => {
@@ -152,7 +153,7 @@ export default function ReadmeBuilder() {
     }
   }, [loaded, s.user, setS]);
 
-  const markdown = useMemo(() => buildMarkdown(s, bannerC), [s, bannerC]);
+  const markdown = useMemo(() => buildMarkdown(s, bannerQs), [s, bannerQs]);
   // Preview loads images from this deployment and never counts views or usage.
   const previewHtml = useMemo(() => {
     const local = markdown

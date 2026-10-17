@@ -36,7 +36,7 @@ const features = [
 ];
 
 const api = [
-  ["/api/banner?c=…", "Banner made in the editor"],
+  ["/api/banner?u=&c=…", "Banner made in the editor"],
   ["/api/profile/banner?name=&role=&background=&tech=&skills=&user=", "Original query-string banner"],
   ["/api/github/streak?user=&theme=", "Streak card"],
   ["/api/github/graph?user=&theme=", "Contribution graph"],

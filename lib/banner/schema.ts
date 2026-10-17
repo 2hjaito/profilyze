@@ -118,17 +118,19 @@ const bgSchema = z
   ])
   .catch({ kind: "preset", name: "itachi1" });
 
+const LOGIN = /^[a-zA-Z0-9-]{1,39}$/;
+
 export const configSchema = z.object({
   v: z.literal(1).catch(1),
   user: z
     .string()
-    .regex(/^[a-zA-Z0-9-]{1,39}$/)
+    .regex(LOGIN)
     .optional()
     .catch(undefined),
   /** Separate view-counter key (defaults to `user`), e.g. for demos that shouldn't count as profile views. */
   vk: z
     .string()
-    .regex(/^[a-zA-Z0-9-]{1,39}$/)
+    .regex(LOGIN)
     .optional()
     .catch(undefined),
   bg: bgSchema,
@@ -148,6 +150,13 @@ export const configSchema = z.object({
 
 export type BannerConfig = z.infer<typeof configSchema>;
 export type BannerElement = z.infer<typeof elementSchema>;
+
+/** A `u` query param overrides the username inside `c`, so after a GitHub rename only the URL needs editing. */
+export const withUser = (config: BannerConfig, u: string | null | undefined): BannerConfig =>
+  u && LOGIN.test(u) && u !== config.user ? { ...config, user: u } : config;
+
+/** Query string for banner links, with the username kept readable up front. */
+export const bannerQuery = (config: BannerConfig, c: string) => (config.user ? `u=${config.user}&c=${c}` : `c=${c}`);
 export type ElementOf<T extends BannerElement["type"]> = Extract<BannerElement, { type: T }>;
 export type BannerBackground = BannerConfig["bg"];
 

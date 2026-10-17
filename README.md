@@ -100,7 +100,7 @@ Add `&theme=<name>` to any card. You can also add `hide_border=true` or `transpa
 
 | Endpoint | Description |
 | --- | --- |
-| `/api/banner?c=<config>` | Banner made in the editor. `c` is the layout as base64url(deflate(JSON)). |
+| `/api/banner?u=<user>&c=<config>` | Banner made in the editor. `c` is the layout as base64url(deflate(JSON)); `u` overrides the username inside it, so after a GitHub rename you only change `u`. |
 | `/api/profile/banner?name=&role=&background=&tech=&skills=&streaks=&view=&user=` | Original query-string banner. `view=` is now a real views counter. |
 | `/api/github/{streak,graph,stats,languages}?user=&theme=` | Profile cards |
 | `/api/github/data?user=` | JSON used by the editor preview |

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { FiCheck, FiCopy, FiExternalLink } from "react-icons/fi";
 import { decodeConfig, encodeConfig } from "@/lib/banner/codec";
 import { legacyToConfig } from "@/lib/banner/legacy";
-import { parseConfig, type BannerConfig } from "@/lib/banner/schema";
+import { bannerQuery, parseConfig, withUser, type BannerConfig } from "@/lib/banner/schema";
 import { SITE_URL } from "@/lib/site";
 import { inputCls, Panel, Segmented } from "./ui";
 
@@ -12,35 +12,36 @@ import { inputCls, Panel, Segmented } from "./ui";
 export async function configFromUrl(raw: string): Promise<BannerConfig> {
   const url = new URL(raw.trim(), SITE_URL);
   const c = url.searchParams.get("c");
-  if (c) return parseConfig(await decodeConfig(c));
+  if (c) return withUser(parseConfig(await decodeConfig(c)), url.searchParams.get("u"));
   if (url.pathname.endsWith("/api/profile/banner")) return legacyToConfig(url.searchParams);
   throw new Error("Not a Profilyze banner URL");
 }
 
-export function useEncoded(config: BannerConfig) {
-  const [encoded, setEncoded] = useState("");
+/** The banner's link query (`u=…&c=…`), or "" while encoding. */
+export function useBannerQuery(config: BannerConfig) {
+  const [query, setQuery] = useState("");
   useEffect(() => {
     let alive = true;
-    const t = setTimeout(() => encodeConfig(config).then((e) => alive && setEncoded(e)), 250);
+    const t = setTimeout(() => encodeConfig(config).then((e) => alive && setQuery(bannerQuery(config, e))), 250);
     return () => {
       alive = false;
       clearTimeout(t);
     };
   }, [config]);
-  return encoded;
+  return query;
 }
 
 export default function EmbedPanel({
-  encoded,
+  query,
   alt,
   onImport,
 }: {
-  encoded: string;
+  query: string;
   alt: string;
   onImport: (c: BannerConfig) => void;
 }) {
-  const imageUrl = `${SITE_URL}/api/banner?c=${encoded}`;
-  const editUrl = `${SITE_URL}/?c=${encoded}`;
+  const imageUrl = `${SITE_URL}/api/banner?${query}`;
+  const editUrl = `${SITE_URL}/?${query}`;
   const formats = {
     Markdown: `[![${alt}](${imageUrl})](${editUrl})`,
     HTML: `<a href="${editUrl}"><img src="${imageUrl}" alt="${alt}" width="100%" /></a>`,
@@ -79,12 +80,12 @@ export default function EmbedPanel({
     >
       <div className="relative -mx-1">
         <pre className="max-h-36 overflow-auto whitespace-pre-wrap break-all rounded-lg border border-line bg-bg p-3 pr-20 font-mono text-[11px] leading-relaxed text-zinc-300">
-          {encoded ? formats[tab] : "…"}
+          {query ? formats[tab] : "…"}
         </pre>
         <button
           type="button"
           onClick={copy}
-          disabled={!encoded}
+          disabled={!query}
           className="absolute right-2 top-2 flex items-center gap-1.5 rounded-md border border-line bg-surface-2 px-2.5 py-1.5 text-xs font-medium transition hover:border-zinc-500"
         >
           {copied ? <FiCheck className="text-emerald-400" /> : <FiCopy />}
@@ -93,7 +94,7 @@ export default function EmbedPanel({
       </div>
       <p className="text-xs text-muted">
         Clicking the banner on GitHub opens it back in this editor.{" "}
-        <a href={encoded ? `/api/banner?c=${encoded}` : undefined} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-accent hover:underline">
+        <a href={query ? `/api/banner?${query}` : undefined} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-accent hover:underline">
           Open rendered SVG <FiExternalLink />
         </a>
       </p>
