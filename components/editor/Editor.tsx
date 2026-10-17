@@ -20,7 +20,7 @@ const NEW_ELEMENT: Record<BannerElement["type"], (id: string, H: number) => Bann
   text: (id, H) => ({ id, type: "text", text: "New text", x: W / 2 - 80, y: H / 2 - 16, s: 32, font: "inter", w: 700, color: "#ffffff" }),
   icon: (id, H) => ({ id, type: "icon", icon: "react", x: W / 2 - 40, y: H / 2 - 40, s: 80 }),
   icons: (id, H) => ({ id, type: "icons", icons: ["javascript", "typescript", "react"], x: W / 2 - 60, y: H / 2 - 16, s: 32, gap: 8 }),
-  stat: (id, H) => ({ id, type: "stat", stat: "streak", icon: "flame", label: "-day streak", x: W / 2 - 80, y: H / 2 - 10, s: 20, font: "inter", w: 700, color: "#ffffff", accent: "#ff9640" }),
+  stat: (id, H) => ({ id, type: "stat", stat: "streak", icon: "flame", label: "day streak", x: W / 2 - 80, y: H / 2 - 10, s: 20, font: "inter", w: 700, color: "#ffffff", accent: "#ff9640" }),
   graph: (id, H) => ({ id, type: "graph", weeks: 20, x: W / 2 - 170, y: H / 2 - 60, s: 12, color: "#39d353" }),
   avatar: (id, H) => ({ id, type: "avatar", x: W / 2 - 60, y: H / 2 - 60, s: 120, ring: "#83ebf1" }),
 };

@@ -165,7 +165,7 @@ export const DEFAULT_CONFIG: BannerConfig = {
     { id: "role", type: "text", text: "FULLSTACK DEVELOPER", x: 164, y: 168, s: 24, font: "inter", w: 600, color: "#83ebf1", ls: 0.12 },
     { id: "tech", type: "icon", icon: "a:java", x: 850, y: 60, s: 140 },
     { id: "skills", type: "icons", icons: ["a:angular", "a:vuejs", "a:reactjs", "a:nodejs"], x: 540, y: 160, s: 34, gap: 10 },
-    { id: "streak", type: "stat", stat: "streak", icon: "a:fire", label: "-day streak", x: 164, y: 30, s: 20, font: "inter", w: 700, color: "#ffffff", accent: "#ff9640" },
+    { id: "streak", type: "stat", stat: "streak", icon: "a:fire", label: "day streak", x: 164, y: 30, s: 20, font: "inter", w: 700, color: "#ffffff", accent: "#ff9640" },
     { id: "views", type: "stat", stat: "views", icon: "a:sharingan", label: "views", x: 344, y: 30, s: 20, font: "inter", w: 700, color: "#ffffff", accent: "#83ebf1" },
     { id: "contribs", type: "stat", stat: "contribs", icon: "activity", label: "contributions", x: 471, y: 30, s: 20, font: "inter", w: 700, color: "#ffffff", accent: "#39d353" },
   ],

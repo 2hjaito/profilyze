@@ -166,12 +166,12 @@ function StatProps({ el, onPatch }: { el: ElementOf<"stat">; onPatch: Patch }) {
         options={STAT_OPTIONS.map((o) => ({ value: o.value, label: o.token ? `${o.label} *` : o.label }))}
         onChange={(stat) => onPatch({ stat } as Partial<BannerElement>)}
       />
-      <Field label="Label" hint='Start with "-" to attach it to the number, e.g. "-day streak" → 25-day streak.'>
+      <Field label="Label" hint='e.g. "day streak" → 25 day streak. Start with "-" to attach it to the number: "-day streak" → 25-day streak.'>
         <input
           className={inputCls}
           value={el.label ?? ""}
           maxLength={30}
-          placeholder="-day streak"
+          placeholder="day streak"
           onChange={(e) => onPatch({ label: e.target.value || undefined } as Partial<BannerElement>, "label")}
         />
       </Field>
