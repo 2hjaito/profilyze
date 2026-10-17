@@ -46,6 +46,13 @@ const base = {
   hidden: z.boolean().optional().catch(undefined),
 };
 
+// Shadow strength (0–1) and an outline drawn behind the fill, for text over busy backgrounds.
+const textFx = {
+  sh: num(0, 1, 0).optional(),
+  oc: color("#000000").optional(),
+  ow: num(0, 0.2, 0).optional(), // outline width, em
+};
+
 const textEl = z.object({
   ...base,
   type: z.literal("text"),
@@ -54,6 +61,7 @@ const textEl = z.object({
   w: num(100, 900, 700),
   color: color("#ffffff"),
   ls: num(-0.2, 1, 0).optional(), // letter spacing, em
+  ...textFx,
 });
 
 const iconEl = z.object({
@@ -69,6 +77,8 @@ const iconsEl = z.object({
   icons: z.array(str(40)).max(16).catch([]),
   gap: num(0, 200, 8),
   inv: z.boolean().optional().catch(undefined),
+  plate: z.enum(["dock", "glass"]).optional().catch(undefined), // backdrop behind the row
+  pc: color("#ffffff").optional(), // plate tint
 });
 
 const statEl = z.object({
@@ -81,6 +91,7 @@ const statEl = z.object({
   w: num(100, 900, 700),
   color: color("#ffffff"),
   accent: color("#83ebf1").optional(),
+  ...textFx,
 });
 
 const graphEl = z.object({

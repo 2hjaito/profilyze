@@ -180,18 +180,53 @@ function fontAttrs(fontId: string, weight: number) {
   return `font-family="'${font.family}', sans-serif" font-weight="${nearestWeight(font, weight)}"`;
 }
 
+/** Drop shadow (a filter on the whole element) and outline (stroke under the fill) attributes. */
+function textFx(el: ElementOf<"text"> | ElementOf<"stat">, i: number, defs: string[]) {
+  let filter = "";
+  if (el.sh) {
+    defs.push(
+      `<filter id="pf-sh${i}" x="-20%" y="-50%" width="140%" height="200%"><feDropShadow dx="0" dy="${r1(el.s * 0.06)}" stdDeviation="${r1(el.s * 0.08)}" flood-color="#000" flood-opacity="${el.sh}"/></filter>`,
+    );
+    filter = ` filter="url(#pf-sh${i})"`;
+  }
+  const stroke = el.ow
+    ? ` stroke="${el.oc ?? "#000000"}" stroke-width="${r1(el.ow * el.s * 2)}" stroke-linejoin="round" paint-order="stroke"`
+    : "";
+  return { filter, stroke };
+}
+
+/**
+ * A rounded backdrop behind an icon row. "glass" fakes the frosted look with a lit gradient and rim:
+ * a real backdrop blur would mean re-blurring the background on every frame of an animated one.
+ */
+function iconPlate(el: ElementOf<"icons">, i: number, defs: string[]) {
+  if (!el.plate || !el.icons.length) return "";
+  const p = el.s * 0.3;
+  const w = el.icons.length * el.s + (el.icons.length - 1) * el.gap + 2 * p;
+  const h = el.s + 2 * p;
+  const tint = el.pc ?? "#ffffff";
+  const box = `x="${r1(-p)}" y="${r1(-p)}" width="${r1(w)}" height="${r1(h)}" rx="${r1(h * 0.3)}"`;
+  if (el.plate === "dock") return `<rect ${box} fill="${tint}" fill-opacity="0.14" stroke="#ffffff" stroke-opacity="0.25"/>`;
+  defs.push(
+    `<linearGradient id="pf-gf${i}" x2="0" y2="1"><stop offset="0" stop-color="${tint}" stop-opacity="0.34"/><stop offset="1" stop-color="${tint}" stop-opacity="0.08"/></linearGradient>`,
+    `<linearGradient id="pf-gr${i}" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.7"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.1"/><stop offset="1" stop-color="#fff" stop-opacity="0.35"/></linearGradient>`,
+  );
+  return `<rect ${box} fill="url(#pf-gf${i})" stroke="url(#pf-gr${i})" stroke-width="1.2"/>`;
+}
+
 function renderElement(el: BannerElement, i: number, ctx: RenderContext, defs: string[]): string {
   switch (el.type) {
     case "text": {
       const ls = el.ls ? ` letter-spacing="${r1(el.ls * el.s)}"` : "";
-      return `<text y="${r1(el.s * 0.82)}" font-size="${el.s}" ${fontAttrs(el.font, el.w)} fill="${el.color}"${ls} xml:space="preserve">${escapeXml(el.text)}</text>`;
+      const fx = textFx(el, i, defs);
+      return `<text y="${r1(el.s * 0.82)}" font-size="${el.s}" ${fontAttrs(el.font, el.w)} fill="${el.color}"${ls}${fx.filter}${fx.stroke} xml:space="preserve">${escapeXml(el.text)}</text>`;
     }
 
     case "icon":
       return iconImage(el.icon, el.s, 0, 0, ctx, el.inv);
 
     case "icons":
-      return el.icons.map((id, k) => iconImage(id, el.s, k * (el.s + el.gap), 0, ctx, el.inv)).join("");
+      return iconPlate(el, i, defs) + el.icons.map((id, k) => iconImage(id, el.s, k * (el.s + el.gap), 0, ctx, el.inv)).join("");
 
     case "stat": {
       const s = el.s;
@@ -208,7 +243,9 @@ function renderElement(el: BannerElement, i: number, ctx: RenderContext, defs: s
         ? // A label starting with "-" attaches to the number: "25" + "-day streak" → "25-day streak".
           `<tspan dx="${el.label.startsWith("-") ? 0 : r1(s * 0.3)}" ${fontAttrs(el.font, 400)} fill-opacity="0.75">${escapeXml(el.label)}</tspan>`
         : "";
-      return `${icon}<text x="${r1(x)}" y="${r1(s * 0.87)}" font-size="${s}" ${fontAttrs(el.font, el.w)} fill="${el.color}" xml:space="preserve">${escapeXml(statValue(el, ctx.github, ctx.views))}${label}</text>`;
+      const fx = textFx(el, i, defs);
+      const text = `${icon}<text x="${r1(x)}" y="${r1(s * 0.87)}" font-size="${s}" ${fontAttrs(el.font, el.w)} fill="${el.color}"${fx.stroke} xml:space="preserve">${escapeXml(statValue(el, ctx.github, ctx.views))}${label}</text>`;
+      return fx.filter ? `<g${fx.filter}>${text}</g>` : text;
     }
 
     case "graph":

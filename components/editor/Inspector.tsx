@@ -101,6 +101,37 @@ function FontFields({ font, weight, onPatch }: { font: string; weight: number; o
   );
 }
 
+/** Shadow and outline, shared by text and stat elements. */
+function TextEffects({ el, onPatch }: { el: ElementOf<"text"> | ElementOf<"stat">; onPatch: Patch }) {
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-3">
+        <Slider
+          label="Shadow"
+          value={el.sh ?? 0}
+          min={0}
+          max={1}
+          step={0.05}
+          format={(v) => `${Math.round(v * 100)}%`}
+          onChange={(sh) => onPatch({ sh: sh || undefined } as Partial<BannerElement>, "sh")}
+        />
+        <Slider
+          label="Outline"
+          value={el.ow ?? 0}
+          min={0}
+          max={0.15}
+          step={0.01}
+          format={(v) => `${v.toFixed(2)}em`}
+          onChange={(ow) => onPatch({ ow: ow || undefined } as Partial<BannerElement>, "ow")}
+        />
+      </div>
+      {!!el.ow && (
+        <ColorField label="Outline color" value={el.oc ?? "#000000"} onChange={(oc) => onPatch({ oc } as Partial<BannerElement>, "oc")} />
+      )}
+    </>
+  );
+}
+
 function TextProps({ el, onPatch }: { el: ElementOf<"text">; onPatch: Patch }) {
   return (
     <>
@@ -123,6 +154,7 @@ function TextProps({ el, onPatch }: { el: ElementOf<"text">; onPatch: Patch }) {
         format={(v) => `${v.toFixed(2)}em`}
         onChange={(ls) => onPatch({ ls } as Partial<BannerElement>, "ls")}
       />
+      <TextEffects el={el} onPatch={onPatch} />
     </>
   );
 }
@@ -153,6 +185,19 @@ function IconsProps({ el, onPatch }: { el: ElementOf<"icons">; onPatch: Patch })
       />
       <Slider label="Gap" value={el.gap} min={0} max={60} onChange={(gap) => onPatch({ gap } as Partial<BannerElement>, "gap")} />
       <Toggle label="Invert colors" checked={!!el.inv} onChange={(inv) => onPatch({ inv } as Partial<BannerElement>)} />
+      <div>
+        <span className="mb-1.5 block text-xs font-medium text-muted">Backdrop</span>
+        <Segmented
+          value={el.plate ?? "none"}
+          onChange={(v) => onPatch({ plate: v === "none" ? undefined : v } as Partial<BannerElement>)}
+          options={[
+            { value: "none", label: "None" },
+            { value: "dock", label: "Dock" },
+            { value: "glass", label: "Glass" },
+          ]}
+        />
+      </div>
+      {el.plate && <ColorField label="Tint" value={el.pc ?? "#ffffff"} onChange={(pc) => onPatch({ pc } as Partial<BannerElement>, "pc")} />}
     </>
   );
 }
@@ -193,6 +238,7 @@ function StatProps({ el, onPatch }: { el: ElementOf<"stat">; onPatch: Patch }) {
           onChange={(accent) => onPatch({ accent } as Partial<BannerElement>, "accent")}
         />
       </div>
+      <TextEffects el={el} onPatch={onPatch} />
       <p className="text-xs text-zinc-500">* Needs a GITHUB_TOKEN on the server.</p>
     </>
   );
