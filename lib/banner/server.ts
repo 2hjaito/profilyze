@@ -103,6 +103,16 @@ async function fontFace(key: string, chars: string): Promise<string> {
 
 const MAX_REMOTE_BYTES = 3 * 1024 * 1024;
 
+function sniffImage(buf: Buffer): string | null {
+  const head = buf.subarray(0, 12);
+  if (head.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "image/png";
+  if (head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) return "image/jpeg";
+  if (head.toString("latin1", 0, 4) === "GIF8") return "image/gif";
+  if (head.toString("latin1", 0, 4) === "RIFF" && head.toString("latin1", 8, 12) === "WEBP") return "image/webp";
+  if (/^\s*(<\?xml|<svg)/.test(buf.subarray(0, 256).toString())) return "image/svg+xml";
+  return null;
+}
+
 /** Fetches a remote image and inlines it, since an SVG inside <img> can't load external files. */
 export async function fetchImage(url: string): Promise<ImageSource | null> {
   try {
@@ -113,9 +123,8 @@ export async function fetchImage(url: string): Promise<ImageSource | null> {
     const type = res.headers.get("content-type")?.split(";")[0].trim() ?? "";
     const buf = Buffer.from(await res.arrayBuffer());
     if (buf.length > MAX_REMOTE_BYTES) return null;
-    // raw.githubusercontent.com serves SVGs as text/plain
-    const isSvg = type === "image/svg+xml" || /^\s*(<\?xml|<svg)/.test(buf.subarray(0, 256).toString());
-    const mime = isSvg ? "image/svg+xml" : type.startsWith("image/") ? type : null;
+    // Hosts often send text/plain or application/octet-stream (raw.githubusercontent.com does for SVG), so sniff first.
+    const mime = sniffImage(buf) ?? (type.startsWith("image/") ? type : null);
     return mime ? toImageSource(mime, buf) : null;
   } catch {
     return null;
