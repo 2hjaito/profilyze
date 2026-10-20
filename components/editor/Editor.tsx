@@ -208,37 +208,10 @@ export default function Editor() {
         />
       </div>
 
-      {/* Canvas */}
-      <div data-keep-selection className="sticky top-16 z-30 rounded-xl border border-line bg-surface p-3 shadow-[0_12px_24px_-12px_rgb(0_0_0/0.6)] sm:p-5">
-        {/* Tall ratios are capped by viewport height so the sticky canvas leaves room to edit. */}
-        <div
-          className="mx-auto bg-[conic-gradient(#1a1a1f_25%,#141418_0_50%,#1a1a1f_0_75%,#141418_0)] [background-size:16px_16px]"
-          style={{ maxWidth: `calc(52vh * ${W / config.h})` }}
-        >
-          <Canvas
-            config={config}
-            github={github.data}
-            views={github.views}
-            selected={selected}
-            onSelect={setSelected}
-            onChange={(id, patch) => updateElement(id, patch, { transient: true })}
-            onBackground={(patch) =>
-              update((c) => (c.bg.kind === "preset" ? { ...c, bg: { ...c.bg, ...patch } } : c), { transient: true })
-            }
-            onCommit={commit}
-          />
-        </div>
-        <p className="mt-3 text-xs text-zinc-500">
-          Drag to move · corners to resize · click the background to move or zoom it · arrows to nudge (⇧ ×10) · ⌥ disables snapping
-          {github.status === "error" && <span className="text-red-400"> · {github.message}</span>}
-          {github.status === "ok" && !github.full && (
-            <span> · Stars, commits and PRs need a GITHUB_TOKEN on the server</span>
-          )}
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[240px_minmax(0,1fr)_minmax(0,400px)]">
-        <div data-keep-selection className="contents">
+      {/* Like the README builder: controls on the left, a sticky preview on the right. On small screens
+          the wrappers dissolve (`contents`) so the canvas sticks above the controls and Embed comes last. */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)] lg:items-start">
+        <div data-keep-selection className="contents lg:block lg:space-y-4">
         <Layers
           background={
             config.bg.kind === "preset"
@@ -260,8 +233,6 @@ export default function Editor() {
             )
           }
         />
-        </div>
-        <div data-keep-selection className="contents">
         {selectedEl ? (
           <ElementInspector
             key={selectedEl.id}
@@ -274,14 +245,49 @@ export default function Editor() {
           <CanvasInspector config={config} onChange={(fn, key) => update(fn, { key })} />
         )}
         </div>
-        <EmbedPanel
-          query={query}
-          alt={alt}
-          onImport={(c) => {
-            load(c);
-            setSelected(null);
-          }}
-        />
+
+        <div className="contents lg:sticky lg:top-20 lg:block lg:max-h-[calc(100vh-6rem)] lg:space-y-4 lg:overflow-y-auto">
+          <div
+            data-keep-selection
+            className="sticky top-16 z-30 order-first rounded-xl border border-line bg-surface p-3 shadow-[0_12px_24px_-12px_rgb(0_0_0/0.6)] sm:p-5 lg:static lg:shadow-none"
+          >
+            {/* Tall ratios are capped by viewport height so the canvas leaves room to edit (and, on desktop, for Embed). */}
+            <div
+              className="mx-auto max-w-[calc(52vh*var(--ar))] bg-[conic-gradient(#1a1a1f_25%,#141418_0_50%,#1a1a1f_0_75%,#141418_0)] [background-size:16px_16px] lg:max-w-[calc((100vh-26rem)*var(--ar))]"
+              style={{ "--ar": W / config.h } as React.CSSProperties}
+            >
+              <Canvas
+                config={config}
+                github={github.data}
+                views={github.views}
+                selected={selected}
+                onSelect={setSelected}
+                onChange={(id, patch) => updateElement(id, patch, { transient: true })}
+                onBackground={(patch) =>
+                  update((c) => (c.bg.kind === "preset" ? { ...c, bg: { ...c.bg, ...patch } } : c), { transient: true })
+                }
+                onCommit={commit}
+              />
+            </div>
+            <p className="mt-3 text-xs text-zinc-500">
+              Drag to move · corners to resize · click the background to move or zoom it · arrows to nudge (⇧ ×10) · ⌥ disables snapping
+              {github.status === "error" && <span className="text-red-400"> · {github.message}</span>}
+              {github.status === "ok" && !github.full && (
+                <span> · Stars, commits and PRs need a GITHUB_TOKEN on the server</span>
+              )}
+            </p>
+          </div>
+          <div className="order-last">
+            <EmbedPanel
+              query={query}
+              alt={alt}
+              onImport={(c) => {
+                load(c);
+                setSelected(null);
+              }}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
