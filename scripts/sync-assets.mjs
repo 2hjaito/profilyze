@@ -3,7 +3,8 @@
 //
 //   npm run sync:assets               # needs MONGODB_URI in .env
 //   npm run sync:assets -- --file aurora.gif --background aurora --label "Aurora" [--position top|center|bottom] [--pixel]
-//   npm run sync:assets -- --file clip.mp4 --background clip --label "Clip"   # video loops, needs ffmpeg
+//   npm run sync:assets -- --file clip.mp4 --background clip --label "Clip" [--start 12.5 --length 4] [--crossfade 0.6]
+//                                     # video loops, needs ffmpeg; the loop is found automatically if not given
 //
 // Re-running is cheap: unchanged sources (same hash) are skipped. Entries that aren't in
 // MongoDB (e.g. added with --file) are kept.
@@ -28,6 +29,9 @@ const { values: args } = parseArgs({
     position: { type: "string", default: "center" }, // which part survives if the image is taller than 16:9
     pixel: { type: "boolean", default: false }, // pixel art: keep native size, render with crisp edges
     force: { type: "boolean", default: false },
+    start: { type: "string" }, // video: loop start (s); found automatically when omitted
+    length: { type: "string" }, // video: loop length (s)
+    crossfade: { type: "string", default: "0.6" }, // video: seconds blended across the loop seam
   },
 });
 
@@ -101,14 +105,43 @@ async function writeBackground(name, buf, position = "center", pixel = false) {
 }
 
 /**
- * Video loops (decoded with ffmpeg) get a bigger budget than GIFs: they're the whole point of the banner.
- * The full loop is kept at up to 10fps and 300 frames (long clips get fewer fps), 800px wide; quality
- * goes first, then the size. Files this big are inlined whole, not split into frames (lib/banner/server.ts).
+ * Video loops (decoded with ffmpeg) are cut to a short loop so every frame can stay sharp: 1280px at
+ * 12fps, quality first. The loop is found automatically (the two frames that look most alike, 3–6s
+ * apart), or set with --start/--length, and its seam is hidden by crossfading the frames after it into
+ * its start. Clips already that short are kept whole. Files this big are inlined whole, not split into
+ * frames (lib/banner/server.ts).
  */
 const VIDEO = /\.(mp4|m4v|mov|webm|mkv)$/i;
 const MAX_VIDEO_BYTES = 6 * 1024 * 1024;
-const MAX_VIDEO_FRAMES = 300;
+const VIDEO_WIDTH = 1280;
+const LOOP_FPS = 12;
+const LOOP_SECONDS = [3, 6];
 const run = (cmd, argv) => promisify(execFile)(cmd, argv, { encoding: "buffer", maxBuffer: 2 ** 31 - 1 }).then((r) => r.stdout);
+
+/** Best loop in the clip: start and length (s), and how big its seam is compared to a normal frame step. */
+async function findLoop(file) {
+  const W = 96, H = 54, px = W * H;
+  const raw = await run("ffmpeg", ["-v", "error", "-i", file, "-an", "-vf", `fps=${LOOP_FPS},scale=${W}:${H}:flags=area,format=gray`, "-f", "rawvideo", "-"]);
+  const n = raw.length / px;
+  const diff = (a, b) => {
+    let sum = 0;
+    for (let k = 0; k < px; k++) sum += (raw[a * px + k] - raw[b * px + k]) ** 2;
+    return Math.sqrt(sum / px);
+  };
+  let step = 0;
+  for (let i = 1; i < n; i++) step += diff(i - 1, i);
+  step = step / (n - 1) || 1;
+
+  const [min, max] = LOOP_SECONDS.map((s) => s * LOOP_FPS);
+  let best = { i: 0, L: Math.min(max, n - 1), d: Infinity };
+  // Leave room after the loop for the crossfade frames.
+  for (let L = min; L <= max; L++)
+    for (let i = 0; i + L + LOOP_FPS < n; i++) {
+      const d = diff(i, i + L);
+      if (d < best.d) best = { i, L, d };
+    }
+  return { start: best.i / LOOP_FPS, length: best.L / LOOP_FPS, seam: best.d / step };
+}
 
 async function writeVideoBackground(name, file, position = "center") {
   const probe = JSON.parse(
@@ -117,34 +150,54 @@ async function writeVideoBackground(name, file, position = "center") {
   const { width: w0, height: h0 } = probe.streams[0];
   const duration = Number(probe.format.duration);
   const aspect = Math.max(w0 / h0, TALLEST);
-  const delay = Math.max(100, Math.ceil((duration * 1000) / MAX_VIDEO_FRAMES));
   const cropY = { top: "0", bottom: "ih-oh" }[position] ?? "(ih-oh)/2";
+
+  let loop;
+  if (args.start || args.length) loop = { start: Number(args.start ?? 0), length: Number(args.length ?? LOOP_SECONDS[1]) };
+  else if (duration <= LOOP_SECONDS[1] + 1) loop = { start: 0, length: duration, whole: true };
+  else loop = await findLoop(file);
+  const fade = loop.whole ? 0 : Math.round(Number(args.crossfade) * LOOP_FPS);
+  console.log(
+    `  loop ${loop.start.toFixed(1)}s +${loop.length.toFixed(1)}s` +
+      (loop.seam !== undefined ? `, seam ${loop.seam.toFixed(2)}x a frame step` : "") +
+      (fade ? `, crossfade ${args.crossfade}s` : ""),
+  );
+
   const decode = (width, height) =>
     run("ffmpeg", [
-      "-v", "error", "-i", file, "-an",
-      "-vf", `fps=1000/${delay},scale=${width}:${height}:force_original_aspect_ratio=increase:flags=lanczos,crop=${width}:${height}:(iw-ow)/2:${cropY}`,
+      "-v", "error", "-ss", String(loop.start), "-t", String(loop.length + (fade + 2) / LOOP_FPS), "-i", file, "-an",
+      "-vf", `fps=${LOOP_FPS},scale=${width}:${height}:force_original_aspect_ratio=increase:flags=lanczos,crop=${width}:${height}:(iw-ow)/2:${cropY}`,
       "-pix_fmt", "rgb24", "-f", "rawvideo", "-",
     ]);
 
-  let width = Math.min(800, w0);
-  let height, out;
+  let width = Math.min(VIDEO_WIDTH, w0);
+  let height, out, quality;
   for (;;) {
     height = Math.round(width / aspect / 2) * 2;
+    const fb = width * height * 3;
     const raw = await decode(width, height);
-    const frames = Math.min(raw.length / (width * height * 3), MAX_VIDEO_FRAMES);
-    const input = sharp(raw.subarray(0, frames * width * height * 3), {
-      raw: { width, height: height * frames, channels: 3, pageHeight: height },
-    });
-    for (const quality of [70, 62, 55]) {
-      out = await input.clone().webp({ quality, effort: 5, smartSubsample: true, loop: 0, delay: Array(frames).fill(delay) }).toBuffer();
+    const decoded = Math.floor(raw.length / fb);
+    const frames = Math.min(Math.round(loop.length * LOOP_FPS), decoded - (fade ? fade : 0));
+    const data = Buffer.from(raw.subarray(0, frames * fb));
+    // The loop's first frames fade in from the frames right after its end, so wrapping around is seamless.
+    for (let i = 0; i < Math.min(fade, decoded - frames); i++) {
+      const t = (i + 1) / (fade + 1);
+      const tail = raw.subarray((frames + i) * fb, (frames + i + 1) * fb);
+      for (let k = 0; k < fb; k++) data[i * fb + k] = Math.round(tail[k] * (1 - t) + data[i * fb + k] * t);
+    }
+    const input = sharp(data, { raw: { width, height: height * frames, channels: 3, pageHeight: height } });
+    for (quality of [85, 80, 75, 70]) {
+      const delay = Array(frames).fill(Math.round(1000 / LOOP_FPS));
+      out = await input.clone().webp({ quality, effort: 5, smartSubsample: true, loop: 0, delay }).toBuffer();
       if (out.length <= MAX_VIDEO_BYTES) break;
     }
-    if (out.length <= MAX_VIDEO_BYTES || width <= 400) break;
+    if (out.length <= MAX_VIDEO_BYTES || width <= 640) break;
     width = Math.round((width * 0.85) / 2) * 2;
   }
+  console.log(`  ${width}x${height} q${quality} ${(out.length / 1024 / 1024).toFixed(2)} MB`);
 
   await writeFile(`${OUT}/backgrounds/${name}.webp`, out);
-  const still = await run("ffmpeg", ["-v", "error", "-ss", String(duration / 2), "-i", file, "-frames:v", "1", "-f", "image2pipe", "-c:v", "png", "-"]);
+  const still = await run("ffmpeg", ["-v", "error", "-ss", String(loop.start + loop.length / 2), "-i", file, "-frames:v", "1", "-f", "image2pipe", "-c:v", "png", "-"]);
   await sharp(still).resize(400, 100, { fit: "cover", position: POSITIONS[position] ?? "centre" }).webp({ quality: 72 }).toFile(`${OUT}/thumbs/${name}.webp`);
   return { animated: true, w: width, h: height };
 }
