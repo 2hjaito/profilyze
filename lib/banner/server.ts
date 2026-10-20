@@ -24,10 +24,14 @@ const toDataUri = (mime: string, buf: Buffer | Uint8Array) =>
 
 // Past this many frames the SVG would get too heavy; such images stay as-is (still animated outside Safari).
 const MAX_FRAMES = 300;
+// Split frames lose the animation's inter-frame compression, so heavy animations (the video loops)
+// would grow 2–4x. Those stay one animated WebP too.
+const MAX_SPLIT_BYTES = 1.5 * 1024 * 1024;
 
 /** Inlines an image, splitting animated GIF/WebP into frames (see Frames in render.ts). */
 async function toImageSource(mime: string, buf: Buffer): Promise<ImageSource> {
   if (mime !== "image/gif" && mime !== "image/webp") return toDataUri(mime, buf);
+  if (buf.length > MAX_SPLIT_BYTES) return toDataUri(mime, buf);
   try {
     const img = sharp(buf, { animated: true, limitInputPixels: 1e8 });
     const { pages = 1, pageHeight, width, delay = [], loop = 0 } = await img.metadata();
