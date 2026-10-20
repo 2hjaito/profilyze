@@ -102,11 +102,11 @@ async function writeBackground(name, buf, position = "center", pixel = false) {
 
 /**
  * Video loops (decoded with ffmpeg) get a bigger budget than GIFs: they're the whole point of the banner.
- * The full loop is kept, at most 10fps and never past the frame count the banner can split
- * (lib/banner/server.ts); quality goes first, then the size.
+ * The full loop is kept at up to 10fps and 300 frames (long clips get fewer fps), 800px wide; quality
+ * goes first, then the size. Files this big are inlined whole, not split into frames (lib/banner/server.ts).
  */
 const VIDEO = /\.(mp4|m4v|mov|webm|mkv)$/i;
-const MAX_VIDEO_BYTES = 3.5 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 6 * 1024 * 1024;
 const MAX_VIDEO_FRAMES = 300;
 const run = (cmd, argv) => promisify(execFile)(cmd, argv, { encoding: "buffer", maxBuffer: 2 ** 31 - 1 }).then((r) => r.stdout);
 
@@ -126,7 +126,7 @@ async function writeVideoBackground(name, file, position = "center") {
       "-pix_fmt", "rgb24", "-f", "rawvideo", "-",
     ]);
 
-  let width = Math.min(640, w0);
+  let width = Math.min(800, w0);
   let height, out;
   for (;;) {
     height = Math.round(width / aspect / 2) * 2;
