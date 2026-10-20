@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { FiCheck, FiCopy, FiEdit2, FiGithub } from "react-icons/fi";
+import { H, W } from "@/lib/banner/schema";
 import type { GalleryItem } from "@/lib/registry";
 import { SITE_URL } from "@/lib/site";
 
@@ -25,6 +26,7 @@ export default function Gallery() {
   const [total, setTotal] = useState<number | null>(null);
   const [next, setNext] = useState<string | null>(null);
   const [state, setState] = useState<"loading" | "idle" | "error">("loading");
+  const columns = useColumns();
 
   const load = useCallback(async (before?: string) => {
     setState("loading");
@@ -32,7 +34,9 @@ export default function Gallery() {
       const res = await fetch(`/api/gallery${before ? `?before=${encodeURIComponent(before)}` : ""}`);
       if (!res.ok) throw new Error();
       const page: Page = await res.json();
-      setItems((prev) => (before ? [...prev, ...page.items] : page.items));
+      // Responses cached before `h` existed lack it; treat those as the default 4:1.
+      const fresh = page.items.map((it) => ({ ...it, h: it.h || H }));
+      setItems((prev) => (before ? [...prev, ...fresh] : fresh));
       setTotal(page.total);
       setNext(page.next);
       setState("idle");
@@ -71,39 +75,19 @@ export default function Gallery() {
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {items.map((item) => (
-          <article key={item.user} className="overflow-hidden rounded-xl border border-line bg-surface">
-            <a href={`/?c=${item.c}`} className="block bg-bg" title="Open in the editor">
-              <BannerImage src={`/api/banner?c=${item.c}&preview=1`} alt={`${item.user}'s banner`} />
-            </a>
-            <div className="flex items-center gap-3 px-4 py-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`https://github.com/${item.user}.png?size=64`} alt="" width={28} height={28} className="rounded-full" loading="lazy" />
-              <div className="min-w-0 flex-1">
-                <a
-                  href={`https://github.com/${item.user}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 truncate text-sm font-medium hover:text-accent"
-                >
-                  {item.user} <FiGithub className="shrink-0 text-muted" />
-                </a>
-                <p className="text-xs text-muted">Updated {timeAgo(item.updatedAt)}</p>
-              </div>
-              <a
-                href={`/?c=${item.c}`}
-                className="flex shrink-0 items-center gap-1.5 rounded-md border border-line bg-surface-2 px-2.5 py-1.5 text-xs font-medium hover:border-zinc-500"
-              >
-                <FiEdit2 /> Use this design
-              </a>
-            </div>
-          </article>
+      {/* Masonry: each card joins the shorter column, so a 4:1 banner never sits beside a 16:9 one's empty space. */}
+      <div className="flex items-start gap-4">
+        {masonry(items, columns).map((col, i) => (
+          <div key={i} className="min-w-0 flex-1 space-y-4">
+            {col.map((item) => (
+              <BannerCard key={item.user} item={item} />
+            ))}
+            {state === "loading" &&
+              Array.from({ length: items.length ? 1 : 2 }, (_, j) => (
+                <div key={j} className="aspect-[4/1.35] animate-pulse rounded-xl border border-line bg-surface" />
+              ))}
+          </div>
         ))}
-        {state === "loading" &&
-          Array.from({ length: items.length ? 2 : 4 }, (_, i) => (
-            <div key={i} className="aspect-[4/1.35] animate-pulse rounded-xl border border-line bg-surface" />
-          ))}
       </div>
 
       {next && state !== "loading" && (
@@ -121,15 +105,79 @@ export default function Gallery() {
   );
 }
 
-/** Banner preview with a pulsing 4:1 placeholder until the image arrives, then its own height. */
-function BannerImage({ src, alt }: { src: string; alt: string }) {
+const MD = "(min-width: 768px)";
+
+/** Two columns from Tailwind's md breakpoint up, one below. */
+function useColumns() {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia(MD);
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    () => (window.matchMedia(MD).matches ? 2 : 1),
+    () => 2,
+  );
+}
+
+// The card footer is about 56px on a ~600px-wide column, in banner-width units.
+const FOOTER = 0.1;
+
+/** Deals items in order to the currently shortest column; appending a page never moves earlier cards. */
+function masonry(items: GalleryItem[], n: number) {
+  const cols: GalleryItem[][] = Array.from({ length: n }, () => []);
+  const heights = new Array<number>(n).fill(0);
+  for (const item of items) {
+    const i = heights.indexOf(Math.min(...heights));
+    cols[i].push(item);
+    heights[i] += item.h / W + FOOTER;
+  }
+  return cols;
+}
+
+function BannerCard({ item }: { item: GalleryItem }) {
+  return (
+    <article className="overflow-hidden rounded-xl border border-line bg-surface">
+      <a href={`/?c=${item.c}`} className="block bg-bg" title="Open in the editor">
+        <BannerImage src={`/api/banner?c=${item.c}&preview=1`} alt={`${item.user}'s banner`} ratio={W / item.h} />
+      </a>
+      <div className="flex items-center gap-3 px-4 py-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`https://github.com/${item.user}.png?size=64`} alt="" width={28} height={28} className="rounded-full" loading="lazy" />
+        <div className="min-w-0 flex-1">
+          <a
+            href={`https://github.com/${item.user}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 truncate text-sm font-medium hover:text-accent"
+          >
+            {item.user} <FiGithub className="shrink-0 text-muted" />
+          </a>
+          <p className="text-xs text-muted">Updated {timeAgo(item.updatedAt)}</p>
+        </div>
+        <a
+          href={`/?c=${item.c}`}
+          className="flex shrink-0 items-center gap-1.5 rounded-md border border-line bg-surface-2 px-2.5 py-1.5 text-xs font-medium hover:border-zinc-500"
+        >
+          <FiEdit2 /> Use this design
+        </a>
+      </div>
+    </article>
+  );
+}
+
+/** Banner preview with a pulsing placeholder in the banner's own ratio until the image arrives. */
+function BannerImage({ src, alt, ratio }: { src: string; alt: string; ratio: number }) {
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
   // A cached image can finish before hydration attaches onLoad, so check on mount too.
   const ref = useCallback((img: HTMLImageElement | null) => {
     if (img?.complete) setStatus(img.naturalWidth ? "loaded" : "error");
   }, []);
   return (
-    <div className={status === "loaded" ? "" : `relative aspect-[4/1] bg-surface-2 ${status === "loading" ? "animate-pulse" : ""}`}>
+    <div
+      className={status === "loaded" ? "" : `relative bg-surface-2 ${status === "loading" ? "animate-pulse" : ""}`}
+      style={status === "loaded" ? undefined : { aspectRatio: ratio }}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         ref={ref}

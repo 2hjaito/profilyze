@@ -1,4 +1,6 @@
 import "server-only";
+import { decodeConfig } from "./banner/codec";
+import { H, parseConfig } from "./banner/schema";
 import { db } from "./mongo";
 
 // Latest banner design per GitHub user, recorded when a banner is actually served
@@ -54,7 +56,16 @@ export async function registerBanner(user: string, c: string) {
   }
 }
 
-export type GalleryItem = { user: string; c: string; updatedAt: string };
+/** `h` is the banner height on the 1000-wide canvas, so the gallery can lay cards out before images load. */
+export type GalleryItem = { user: string; c: string; h: number; updatedAt: string };
+
+const bannerHeight = async (c: string) => {
+  try {
+    return parseConfig(await decodeConfig(c)).h;
+  } catch {
+    return H;
+  }
+};
 
 export async function listBanners(limit: number, before?: Date) {
   const col = collection();
@@ -69,7 +80,9 @@ export async function listBanners(limit: number, before?: Date) {
     c.estimatedDocumentCount(),
   ]);
   return {
-    items: docs.map((d) => ({ user: d.user, c: d.c, updatedAt: d.updatedAt.toISOString() })),
+    items: await Promise.all(
+      docs.map(async (d) => ({ user: d.user, c: d.c, h: await bannerHeight(d.c), updatedAt: d.updatedAt.toISOString() })),
+    ),
     total,
   };
 }
