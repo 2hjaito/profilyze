@@ -17,22 +17,6 @@
       "h": 402
     },
     {
-      "name": "itachi4",
-      "label": "Itachi III",
-      "animated": false,
-      "hash": "9d175763825c",
-      "w": 1600,
-      "h": 401
-    },
-    {
-      "name": "itachi5",
-      "label": "Itachi IV",
-      "animated": false,
-      "hash": "fb83f4d1f8fa",
-      "w": 1600,
-      "h": 400
-    },
-    {
       "name": "itachi6",
       "label": "Itachi V",
       "animated": false,
@@ -41,28 +25,12 @@
       "h": 400
     },
     {
-      "name": "itasasu",
-      "label": "Itachi & Sasuke",
-      "animated": false,
-      "hash": "75eb3ce6f79b",
-      "w": 1600,
-      "h": 401
-    },
-    {
       "name": "minato",
       "label": "Minato",
       "animated": false,
       "hash": "15949bf1ad96",
       "w": 700,
       "h": 315
-    },
-    {
-      "name": "minato1",
-      "label": "Minato II",
-      "animated": false,
-      "hash": "ba97b019e64d",
-      "w": 700,
-      "h": 175
     },
     {
       "name": "thean",
@@ -287,6 +255,118 @@
       "w": 711,
       "h": 400,
       "hash": "638ccbac6507"
+    },
+    {
+      "name": "autumnCats",
+      "label": "Autumn Cats",
+      "animated": true,
+      "w": 640,
+      "h": 360,
+      "hash": "3cf97381ee2f"
+    },
+    {
+      "name": "citlaliMoment",
+      "label": "Citlali",
+      "animated": true,
+      "w": 640,
+      "h": 360,
+      "hash": "bd1d29429efb"
+    },
+    {
+      "name": "darkSasuke",
+      "label": "Dark Sasuke",
+      "animated": true,
+      "w": 640,
+      "h": 360,
+      "hash": "88ccd7deba68"
+    },
+    {
+      "name": "galaxyEyes",
+      "label": "Galaxy Eyes",
+      "animated": true,
+      "w": 640,
+      "h": 360,
+      "hash": "ea1259c647fa"
+    },
+    {
+      "name": "gojoBlueEyes",
+      "label": "Gojo Blue Eyes",
+      "animated": true,
+      "w": 640,
+      "h": 360,
+      "hash": "97d8496ce0eb"
+    },
+    {
+      "name": "hinataMoonlit",
+      "label": "Hinata Moonlit Blossom",
+      "animated": true,
+      "w": 640,
+      "h": 360,
+      "hash": "97f8ef9cc5d8"
+    },
+    {
+      "name": "itachiLoop",
+      "label": "Itachi Uchiha",
+      "animated": true,
+      "w": 544,
+      "h": 306,
+      "hash": "f2295359485e"
+    },
+    {
+      "name": "madaraLoop",
+      "label": "Madara Uchiha",
+      "animated": true,
+      "w": 544,
+      "h": 306,
+      "hash": "9a08ad31e638"
+    },
+    {
+      "name": "narutoLofi",
+      "label": "Naruto Lofi",
+      "animated": true,
+      "w": 640,
+      "h": 360,
+      "hash": "572f5009bd5b"
+    },
+    {
+      "name": "sasukeStudying",
+      "label": "Sasuke Studying",
+      "animated": true,
+      "w": 640,
+      "h": 360,
+      "hash": "c7a4f70d784f"
+    },
+    {
+      "name": "gojoVoid",
+      "label": "Gojo Void",
+      "animated": true,
+      "w": 640,
+      "h": 360,
+      "hash": "b12d1bcbd486"
+    },
+    {
+      "name": "shisuiAura",
+      "label": "Shisui Green Aura",
+      "animated": true,
+      "w": 640,
+      "h": 360,
+      "hash": "0a1d2ad3508c"
+    },
+    {
+      "name": "starrySky",
+      "label": "Starry Sky",
+      "animated": true,
+      "w": 462,
+      "h": 260,
+      "hash": "8bed30254968"
+    },
+    {
+      "name": "kurumiTimekeeper",
+      "label": "Kurumi Tokisaki",
+      "animated": true,
+      "w": 640,
+      "h": 360,
+      "hash": "99539a0dd66f"
     }
   ],
   "icons": [
