@@ -105,7 +105,25 @@ async function fontFace(key: string, chars: string): Promise<string> {
   return face;
 }
 
-const MAX_REMOTE_BYTES = 3 * 1024 * 1024;
+// Remote images are downloaded up to MAX_REMOTE_BYTES; anything past MAX_INLINE_BYTES is re-encoded
+// as WebP (GIFs shrink 2x or more) and dropped only if it still exceeds MAX_SHRUNK_BYTES,
+// the same budget the bundled video backgrounds use.
+const MAX_REMOTE_BYTES = 20 * 1024 * 1024;
+const MAX_INLINE_BYTES = 3 * 1024 * 1024;
+const MAX_SHRUNK_BYTES = 6 * 1024 * 1024;
+const MAX_REMOTE_WIDTH = 1000;
+
+async function shrinkImage(buf: Buffer): Promise<Buffer | null> {
+  try {
+    const out = await sharp(buf, { animated: true, limitInputPixels: 1e8 })
+      .resize({ width: MAX_REMOTE_WIDTH, withoutEnlargement: true })
+      .webp({ quality: 70, effort: 2 })
+      .toBuffer();
+    return out.length <= MAX_SHRUNK_BYTES ? out : null;
+  } catch {
+    return null;
+  }
+}
 
 function sniffImage(buf: Buffer): string | null {
   const head = buf.subarray(0, 12);
@@ -124,12 +142,17 @@ export async function fetchImage(url: string): Promise<ImageSource | null> {
     if (protocol !== "https:" && protocol !== "http:") return null;
     const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
     if (!res.ok) return null;
+    if (Number(res.headers.get("content-length")) > MAX_REMOTE_BYTES) return null;
     const type = res.headers.get("content-type")?.split(";")[0].trim() ?? "";
     const buf = Buffer.from(await res.arrayBuffer());
     if (buf.length > MAX_REMOTE_BYTES) return null;
     // Hosts often send text/plain or application/octet-stream (raw.githubusercontent.com does for SVG), so sniff first.
     const mime = sniffImage(buf) ?? (type.startsWith("image/") ? type : null);
-    return mime ? toImageSource(mime, buf) : null;
+    if (!mime) return null;
+    if (buf.length <= MAX_INLINE_BYTES) return toImageSource(mime, buf);
+    if (mime === "image/svg+xml") return null;
+    const small = await shrinkImage(buf);
+    return small ? toImageSource("image/webp", small) : null;
   } catch {
     return null;
   }
