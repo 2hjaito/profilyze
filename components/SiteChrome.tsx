@@ -13,7 +13,7 @@ const socials = [
 
 type Page = "banner" | "readme" | "widgets" | "community" | "about";
 
-export function SiteHeader({ active }: { active: Page }) {
+export function SiteHeader({ active, wide = false }: { active: Page; wide?: boolean }) {
   const link = (href: string, label: string, on: boolean) => (
     <Link
       href={href}
@@ -24,7 +24,7 @@ export function SiteHeader({ active }: { active: Page }) {
   );
   return (
     <header className="sticky top-0 z-40 border-b border-line/60 bg-bg/80 backdrop-blur-md">
-      <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-4 px-4 sm:px-6">
+      <div className={`mx-auto flex h-14 w-full items-center gap-4 px-4 sm:px-6 ${wide ? "lg:px-4" : "max-w-7xl"}`}>
         <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold tracking-tight">
           <Logo size={28} />
           <span className="hidden sm:inline">Profilyze</span>
@@ -49,9 +49,9 @@ export function SiteHeader({ active }: { active: Page }) {
   );
 }
 
-export function SiteFooter() {
+export function SiteFooter({ className = "" }: { className?: string }) {
   return (
-    <footer className="border-t border-line">
+    <footer className={`border-t border-line ${className}`}>
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-6 text-sm text-muted sm:flex-row sm:px-6">
         <p>
           © {new Date().getFullYear()} Profilyze · Built by{" "}
@@ -72,13 +72,20 @@ export function SiteFooter() {
   );
 }
 
-/** Tools pages get straight to work; the explanation lives on /about. */
-export function PageShell({ active, children }: { active: Page; children: React.ReactNode }) {
+/**
+ * Tools pages get straight to work; the explanation lives on /about.
+ * `workspace` pages fill the window edge to edge on desktop (panels scroll on their own, no footer).
+ */
+export function PageShell({ active, workspace = false, children }: { active: Page; workspace?: boolean; children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-[radial-gradient(60rem_30rem_at_50%_-10rem,color-mix(in_oklab,var(--color-accent)_8%,transparent),transparent)]">
-      <SiteHeader active={active} />
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-12 pt-4 sm:px-6">{children}</main>
-      <SiteFooter />
+      <SiteHeader active={active} wide={workspace} />
+      <main
+        className={`mx-auto w-full flex-1 px-4 pb-12 pt-4 sm:px-6 ${workspace ? "lg:max-w-none lg:p-0" : "max-w-7xl"}`}
+      >
+        {children}
+      </main>
+      <SiteFooter className={workspace ? "lg:hidden" : ""} />
     </div>
   );
 }

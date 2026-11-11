@@ -36,17 +36,23 @@ export function ElementInspector({
   onPatch,
   onDuplicate,
   onDelete,
+  onBack,
 }: {
   el: BannerElement;
   onPatch: Patch;
   onDuplicate: () => void;
   onDelete: () => void;
+  /** Back to the canvas settings. */
+  onBack: () => void;
 }) {
   return (
     <Panel
       title={TYPE_LABEL[el.type]}
       action={
-        <div className="flex gap-1.5">
+        <div className="flex items-center gap-1.5">
+          <button type="button" onClick={onBack} className="mr-1 text-xs text-muted hover:text-fg">
+            ← Canvas
+          </button>
           <IconButton label="Duplicate (⌘D)" onClick={onDuplicate}>
             <FiCopy />
           </IconButton>

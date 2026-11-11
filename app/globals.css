@@ -62,6 +62,25 @@ body {
   }
 }
 
+/* Editor workspace columns: panels sit flush, stacked with dividers, headers pinned while the column scrolls. */
+@media (min-width: 64rem) {
+  .workspace-col > section {
+    border-width: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .workspace-col > section + section {
+    border-top-width: 1px;
+  }
+  .workspace-col > section > :first-child {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: color-mix(in oklab, var(--color-surface) 92%, transparent);
+    backdrop-filter: blur(8px);
+  }
+}
+
 /* GitHub-like rendering for the README preview. */
 .md-preview { color: #e6edf3; font-size: 14px; line-height: 1.6; }
 .md-preview h1, .md-preview h2 { margin: 1.2em 0 0.6em; padding-bottom: 0.3em; border-bottom: 1px solid #30363d; font-weight: 600; }

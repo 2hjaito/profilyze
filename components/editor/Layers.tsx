@@ -17,6 +17,7 @@ export default function Layers({
   onToggle,
   onMove,
   action,
+  className,
 }: {
   /** Name of the background, listed as the bottom layer. */
   background: string;
@@ -26,11 +27,12 @@ export default function Layers({
   onToggle: (id: string) => void;
   onMove: (id: string, dir: 1 | -1) => void;
   action?: React.ReactNode;
+  className?: string;
 }) {
   // Last element renders on top, so list it first.
   const ordered = [...els].reverse();
   return (
-    <Panel title="Layers" action={action}>
+    <Panel title="Layers" action={action} className={className}>
 
       <ul className="-mx-2 space-y-0.5">
         {ordered.map((el, i) => (
