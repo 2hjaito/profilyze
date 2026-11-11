@@ -56,8 +56,9 @@ const lastKnown = new Map<string, number>();
 const viewKey = (user: string) => `user:${user.toLowerCase()}`;
 
 /**
- * Counts one view and returns the new total. Never holds the banner up for long:
- * if the database is slow, the last known total is returned and the write finishes after the response.
+ * Counts one view and returns the new total. Never holds the banner up for long: once this instance
+ * knows a total, it answers from memory and the write finishes after the response; otherwise it waits
+ * for the database, at most WAIT_MS.
  */
 export async function countView(user: string, visitor: string | null = null): Promise<number | undefined> {
   const col = collection();
@@ -74,7 +75,8 @@ export async function countView(user: string, visitor: string | null = null): Pr
       );
     })
     .then((doc) => {
-      if (doc) lastKnown.set(key, doc.count);
+      // Never step back below an optimistic count this instance already showed.
+      if (doc) lastKnown.set(key, Math.max(doc.count, lastKnown.get(key) ?? 0));
       return doc?.count;
     })
     .catch((err) => {
@@ -83,6 +85,15 @@ export async function countView(user: string, visitor: string | null = null): Pr
     });
 
   after(() => write);
+
+  // Anonymous views (GitHub's proxy) always count, so show the next number straight away. A known
+  // visitor may be a repeat within the dedupe window, so they see the current total instead.
+  const known = lastKnown.get(key);
+  if (known !== undefined) {
+    const next = visitor ? known : known + 1;
+    lastKnown.set(key, next);
+    return next;
+  }
   return Promise.race([write, sleep(WAIT_MS).then(() => lastKnown.get(key))]);
 }
 

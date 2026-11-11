@@ -128,6 +128,8 @@ The demos above use a separate counter key (`vk=profilyze-readme`), so visits to
 
 ## Self-hosting
 
+Functions run in the region set in `vercel.json` (`sin1`). Keep it next to your MongoDB cluster: a views banner talks to the database on every load, and a cross-ocean round trip costs about 200 ms each time.
+
 Environment variables:
 
 | Variable | Needed for |
