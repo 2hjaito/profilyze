@@ -315,7 +315,7 @@ export function CanvasInspector({
       />
 
       {bg.kind === "preset" && (
-        <div className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto pr-1">
+        <div className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto pr-1 lg:max-h-[max(16rem,calc(100dvh-27rem))]">
           {backgrounds.map((b) => (
             <button
               key={b.name}
