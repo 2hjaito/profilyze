@@ -3,6 +3,8 @@ import { createHash } from "node:crypto";
 import { after } from "next/server";
 import { db, sleep } from "../mongo";
 
+const TIMEOUT = Symbol("timeout");
+
 // Rendered banners, kept so a request only has to fill in the view count instead of
 // fetching GitHub, splitting animated icons and subsetting fonts again (seconds on a cold instance).
 // Each instance keeps a memory copy; MongoDB shares them across instances and survives cold starts.
@@ -17,8 +19,8 @@ const EXPIRE_SECONDS = 14 * 24 * 60 * 60;
 /** MongoDB documents max out at 16 MB; heavy video banners stay in memory only. */
 const MAX_STORED_BYTES = 8 * 1024 * 1024;
 const MAX_MEMORY_BYTES = 96 * 1024 * 1024;
-/** Past this, a slow database read is abandoned and the banner built directly. */
-const READ_TIMEOUT_MS = 2000;
+/** Past this, a slow database read gets a build racing it (a cold cross-region connect can take seconds). */
+const READ_HEAD_START_MS = 2000;
 
 export type Built = { svg: string; /** False when GitHub data or a remote image was missing. */ complete: boolean };
 type Entry = { svg: string; at: number };
@@ -62,14 +64,13 @@ const collection = () => {
 async function load(key: string): Promise<Entry | null> {
   const col = collection();
   if (!col) return null;
-  const read = col
+  return col
     .then((c) => c.findOneAndUpdate({ _id: key }, { $set: { used: new Date() } }, { projection: { svg: 1, at: 1 } }))
     .then((doc) => (doc ? { svg: doc.svg, at: doc.at.getTime() } : null))
     .catch((err) => {
       console.error("Banner cache read failed:", err.message);
       return null;
     });
-  return Promise.race([read, sleep(READ_TIMEOUT_MS).then(() => null)]);
 }
 
 async function store(key: string, entry: Entry) {
@@ -122,11 +123,20 @@ export async function cachedBanner(key: string, build: () => Promise<Built>): Pr
   const running = inflight.get(key);
   if (running) return (await running).svg;
 
-  const stored = await load(key);
-  if (stored) {
-    remember(key, stored);
-    refreshIfStale(key, stored, build);
-    return stored.svg;
+  // Reading is far cheaper than building, so a slow read isn't abandoned: after a head start a build
+  // races it, and whichever has the banner first wins.
+  const reading = load(key);
+  const early = await Promise.race([reading, sleep(READ_HEAD_START_MS).then((): typeof TIMEOUT => TIMEOUT)]);
+  if (early === TIMEOUT) {
+    const building = rebuild(key, build);
+    const stored = await Promise.race([reading, building.then(() => null)]);
+    return stored ? serveStored(key, stored, build) : (await building).svg;
   }
-  return (await rebuild(key, build)).svg;
+  return early ? serveStored(key, early, build) : (await rebuild(key, build)).svg;
+}
+
+function serveStored(key: string, entry: Entry, build: () => Promise<Built>) {
+  if (!memory.has(key)) remember(key, entry);
+  refreshIfStale(key, entry, build);
+  return entry.svg;
 }
