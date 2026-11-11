@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
     "/api/profile/banner": ["./public/assets/**/*", "./public/fonts/*"],
     "/api/github/[card]": ["./public/fonts/inter-*"],
     "/api/stats/users": ["./public/fonts/inter-*"],
+    "/api/badge": ["./public/fonts/inter-*"],
+    "/api/badge/social": ["./public/fonts/inter-*"],
   },
   // Backgrounds, icons and fonts keep their names when re-encoded, so browsers revalidate daily
   // but keep showing the copy they have meanwhile (Vercel's default is to revalidate every load).

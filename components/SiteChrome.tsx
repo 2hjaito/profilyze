@@ -6,14 +6,14 @@ import Logo from "./Logo";
 const socials = [
   { href: REPO_URL, label: "GitHub", icon: FaGithub },
   { href: AUTHOR.site, label: "Portfolio", icon: FaGlobe },
-  { href: "https://discord.com/invite/MxmYrMrJA6", label: "Discord", icon: FaDiscord },
+  { href: "https://discord.com/invite/eG5txdWaqr", label: "Discord", icon: FaDiscord },
   { href: "https://www.youtube.com/@devlands", label: "YouTube", icon: FaYoutube },
   { href: "https://www.tiktok.com/@theanishtar", label: "TikTok", icon: FaTiktok },
 ];
 
-type Page = "banner" | "readme" | "widgets" | "community" | "about";
+type Page = "banner" | "readme" | "widgets" | "badges" | "community" | "about";
 
-export function SiteHeader({ active, wide = false }: { active: Page; wide?: boolean }) {
+export function SiteHeader({ active }: { active: Page }) {
   const link = (href: string, label: string, on: boolean) => (
     <Link
       href={href}
@@ -23,8 +23,8 @@ export function SiteHeader({ active, wide = false }: { active: Page; wide?: bool
     </Link>
   );
   return (
-    <header className="sticky top-0 z-40 border-b border-line/60 bg-bg/80 backdrop-blur-md">
-      <div className={`mx-auto flex h-14 w-full items-center gap-4 px-4 sm:px-6 ${wide ? "lg:px-4" : "max-w-7xl"}`}>
+    <header className="sticky top-0 z-40 h-14 border-b border-line/60 bg-bg/80 backdrop-blur-md">
+      <div className="flex h-full w-full items-center gap-4 px-4 sm:px-6">
         <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold tracking-tight">
           <Logo size={28} />
           <span className="hidden sm:inline">Profilyze</span>
@@ -33,6 +33,7 @@ export function SiteHeader({ active, wide = false }: { active: Page; wide?: bool
           {link("/", "Banner", active === "banner")}
           {link("/readme", "README", active === "readme")}
           {link("/widgets", "Widgets", active === "widgets")}
+          {link("/badges", "Badges", active === "badges")}
           {link("/community", "Community", active === "community")}
           {link("/about", "About", active === "about")}
         </nav>
@@ -52,7 +53,7 @@ export function SiteHeader({ active, wide = false }: { active: Page; wide?: bool
 export function SiteFooter({ className = "" }: { className?: string }) {
   return (
     <footer className={`border-t border-line ${className}`}>
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-6 text-sm text-muted sm:flex-row sm:px-6">
+      <div className="flex flex-col items-center justify-between gap-4 px-4 py-6 text-sm text-muted sm:flex-row sm:px-6">
         <p>
           © {new Date().getFullYear()} Profilyze · Built by{" "}
           <a href={`https://github.com/${AUTHOR.github}`} target="_blank" rel="noopener noreferrer" className="text-fg hover:text-accent">
@@ -79,9 +80,9 @@ export function SiteFooter({ className = "" }: { className?: string }) {
 export function PageShell({ active, workspace = false, children }: { active: Page; workspace?: boolean; children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-[radial-gradient(60rem_30rem_at_50%_-10rem,color-mix(in_oklab,var(--color-accent)_8%,transparent),transparent)]">
-      <SiteHeader active={active} wide={workspace} />
+      <SiteHeader active={active} />
       <main
-        className={`mx-auto w-full flex-1 px-4 pb-12 pt-4 sm:px-6 ${workspace ? "lg:max-w-none lg:p-0" : "max-w-7xl"}`}
+        className={`w-full flex-1 px-4 pb-12 pt-4 sm:px-6 ${workspace ? "lg:p-0" : ""}`}
       >
         {children}
       </main>
