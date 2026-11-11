@@ -128,7 +128,7 @@ The demos above use a separate counter key (`vk=profilyze-readme`), so visits to
 
 ## Self-hosting
 
-Functions run in the region set in `vercel.json` (`sin1`). Keep it next to your MongoDB cluster: a views banner talks to the database on every load, and a cross-ocean round trip costs about 200 ms each time.
+Functions run in Vercel's default region (`iad1`, US East), next to GitHub's camo image proxy, which fetches every README image from the US. A warm instance answers views banners from memory and writes counts after the response, so the database can live elsewhere; only a cold instance waits for it, so a US database region keeps those fast too.
 
 Environment variables:
 

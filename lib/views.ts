@@ -97,13 +97,23 @@ export async function countView(user: string, visitor: string | null = null): Pr
   return Promise.race([write, sleep(WAIT_MS).then(() => lastKnown.get(key))]);
 }
 
-/** Current total without counting (for the editor preview). */
+/** Current total without counting (previews). Answers from memory when it can and refreshes after the response. */
 export async function readViews(user: string): Promise<number | undefined> {
   const col = collection();
   if (!col) return undefined;
+  const key = viewKey(user);
   const read = col
-    .then((c) => c.findOne({ _id: viewKey(user) }))
-    .then((doc) => doc?.count ?? 0)
-    .catch(() => undefined);
+    .then((c) => c.findOne({ _id: key }))
+    .then((doc) => {
+      const count = doc?.count ?? 0;
+      lastKnown.set(key, Math.max(count, lastKnown.get(key) ?? 0));
+      return count;
+    })
+    .catch(() => lastKnown.get(key));
+  const known = lastKnown.get(key);
+  if (known !== undefined) {
+    after(() => read);
+    return known;
+  }
   return Promise.race([read, sleep(WAIT_MS).then(() => undefined)]);
 }
