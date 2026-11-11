@@ -10,6 +10,14 @@ const nextConfig: NextConfig = {
     "/api/github/[card]": ["./public/fonts/inter-*"],
     "/api/stats/users": ["./public/fonts/inter-*"],
   },
+  // Backgrounds, icons and fonts keep their names when re-encoded, so browsers revalidate daily
+  // but keep showing the copy they have meanwhile (Vercel's default is to revalidate every load).
+  async headers() {
+    return ["/assets/:path*", "/fonts/:path*"].map((source) => ({
+      source,
+      headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=2592000" }],
+    }));
+  },
 };
 
 export default nextConfig;

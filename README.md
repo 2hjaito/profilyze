@@ -115,14 +115,15 @@ A **Profile views** stat counts each time the banner is displayed. Counts are ke
 
 Repeat views from the same visitor (an anonymous hash of IP and user agent, never the raw IP) count once per 30 minutes. GitHub is the exception: it loads README images through its camo proxy, which hides the viewer, so GitHub views count on every load, like every GitHub view counter.
 
-Banners with a views counter are sent with `Cache-Control: no-cache`, so GitHub's image proxy fetches them, and counts them, on every view. Banners without a counter stay edge-cached. If the database is slow, the banner is still returned after at most 2.5 s, showing the last known count.
+Banners with a views counter are sent with `Cache-Control: no-cache`, so GitHub's image proxy fetches them, and counts them, on every view. That stays fast because the rendered banner itself is cached (see Performance); each view only increments the counter and writes the number in. Banners without a counter stay edge-cached. If the database is slow, the banner is still returned after at most 2.5 s, showing the last known count.
 
 The demos above use a separate counter key (`vk=profilyze-readme`), so visits to this README don't count as profile views.
 
 ## Performance
 
 - A typical banner is 20–100 KB. Fonts are subset to the glyphs used, and images are pre-optimized WebP.
-- Banners without live data are cached at Vercel's edge for 30 days. Banners with GitHub stats refresh every 4 hours.
+- Banners without live data are cached at Vercel's edge for 30 days. Banners with GitHub stats refresh every 4 hours, and the edge keeps serving the previous copy while they do.
+- Every rendered banner is also cached on the server, in memory and in MongoDB (collection `bannercache`), so a cold instance doesn't have to call GitHub, split animated icons and subset fonts again. A cached banner older than 4 hours is still served and is rebuilt after the response. Designs nobody loads for 14 days are dropped.
 - Text, glyphs, graphs and logos are vector, so they stay sharp on any screen.
 
 ## Self-hosting

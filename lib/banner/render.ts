@@ -22,8 +22,8 @@ export type RenderContext = {
   /** @font-face rules to embed (server only; the editor loads fonts via CSS). */
   fontCss?: string;
   github?: GithubData | null;
-  /** Profile view count, for `views` stats (counted per request by the API). */
-  views?: number;
+  /** Profile view count, for `views` stats, or a placeholder the API fills in per request. */
+  views?: number | string;
   /** Adds data-id hooks so the editor can measure and select elements. */
   editor?: boolean;
 };
@@ -67,14 +67,19 @@ const STAT_VALUE: Record<Exclude<StatKey, "views">, (d: GithubData) => number | 
   prs: (d) => d.prs,
 };
 
-export const statValue = (el: ElementOf<"stat">, data?: GithubData | null, views?: number) =>
-  formatCount(el.stat === "views" ? views : data ? STAT_VALUE[el.stat](data) : undefined);
+export const statValue = (el: ElementOf<"stat">, data?: GithubData | null, views?: number | string) =>
+  el.stat === "views" && typeof views === "string"
+    ? views
+    : formatCount(el.stat === "views" ? (views as number | undefined) : data ? STAT_VALUE[el.stat](data) : undefined);
+
+/** Every character formatCount can produce, so a font subset fits any view count. */
+const COUNT_CHARS = "0123456789,.kM—";
 
 export const hasViewsStat = (config: BannerConfig) =>
   config.els.some((e) => e.type === "stat" && e.stat === "views" && !e.hidden);
 
 /** Every (font, weight) → characters pair a banner needs, for server-side font subsetting. */
-export function fontUsage(config: BannerConfig, data?: GithubData | null, views?: number) {
+export function fontUsage(config: BannerConfig, data?: GithubData | null, views?: number | string) {
   const usage = new Map<string, string>();
   const add = (fontId: string, weight: number, text: string) => {
     const font = findFont(fontId);
@@ -85,7 +90,7 @@ export function fontUsage(config: BannerConfig, data?: GithubData | null, views?
     if (el.hidden) continue;
     if (el.type === "text") add(el.font, el.w, el.text);
     if (el.type === "stat") {
-      add(el.font, el.w, statValue(el, data, views));
+      add(el.font, el.w, el.stat === "views" && typeof views === "string" ? COUNT_CHARS : statValue(el, data, views));
       if (el.label) add(el.font, 400, el.label);
     }
   }

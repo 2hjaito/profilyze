@@ -6,8 +6,8 @@ export const CACHE = {
   static: `public, max-age=${DAY}, s-maxage=${30 * DAY}, stale-while-revalidate=${7 * DAY}`,
   /** Remote images can change; refresh daily. */
   remote: `public, max-age=${HOUR}, s-maxage=${DAY}, stale-while-revalidate=${7 * DAY}`,
-  /** GitHub stats: refresh every few hours, serve stale while revalidating. */
-  live: `public, max-age=${HOUR}, s-maxage=${4 * HOUR}, stale-while-revalidate=${DAY}`,
+  /** GitHub stats: refresh every few hours; the edge keeps answering instantly with the last copy while it does. */
+  live: `public, max-age=${HOUR}, s-maxage=${4 * HOUR}, stale-while-revalidate=${7 * DAY}`,
   /** Always revalidate; GitHub's camo proxy honours this, so counters update on each view. */
   none: "max-age=0, no-cache, no-store, must-revalidate",
 };

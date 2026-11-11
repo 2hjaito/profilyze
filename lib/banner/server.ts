@@ -5,9 +5,10 @@ import sharp from "sharp";
 import subsetFont from "subset-font";
 import { findFont, fontFile } from "../catalog";
 import { getGithubData } from "../github/fetch";
-import type { GithubData } from "../github/types";
+import { formatCount, type GithubData } from "../github/types";
 import { countView, readViews } from "../views";
-import { fontUsage, hasViewsStat, renderBanner, type ImageSource } from "./render";
+import { cachedBanner, templateKey, type Built } from "./cache";
+import { escapeXml, fontUsage, hasViewsStat, renderBanner, type ImageSource } from "./render";
 import type { BannerConfig } from "./schema";
 
 const PUBLIC = path.join(process.cwd(), "public");
@@ -167,19 +168,30 @@ export function needsGithub(config: BannerConfig) {
   );
 }
 
+/** Stands in for the view count in cached banners (a private-use character no text contains). */
+const VIEWS_SLOT = "\uE000";
+
 /**
  * `preview` renders without counting a view (gallery thumbnails, previews).
  * `visitor` (see visitorId) lets repeat views from the same person within 30 minutes count once.
+ * The banner itself comes from the cache (see cache.ts); only the view count is filled in per request.
  */
 export async function renderBannerSvg(
   config: BannerConfig,
   { preview = false, visitor = null }: { preview?: boolean; visitor?: string | null } = {},
 ): Promise<string> {
   const viewsKey = config.vk ?? config.user;
-  const [github, views] = await Promise.all([
-    config.user && needsGithub(config) ? getGithubData(config.user).catch(() => null) : null,
-    viewsKey && hasViewsStat(config) ? (preview ? readViews(viewsKey) : countView(viewsKey, visitor)) : undefined,
+  const withViews = Boolean(viewsKey && hasViewsStat(config));
+  const [svg, views] = await Promise.all([
+    cachedBanner(templateKey(config), () => buildBanner(config, withViews)),
+    withViews && viewsKey ? (preview ? readViews(viewsKey) : countView(viewsKey, visitor)) : undefined,
   ]);
+  return withViews ? svg.replaceAll(VIEWS_SLOT, escapeXml(formatCount(views))) : svg;
+}
+
+async function buildBanner(config: BannerConfig, withViews: boolean): Promise<Built> {
+  const github = config.user && needsGithub(config) ? await getGithubData(config.user).catch(() => null) : null;
+  const views = withViews ? VIEWS_SLOT : undefined;
 
   // Collect every file the renderer will ask for, then load them in parallel.
   const files = new Set<string>();
@@ -197,7 +209,7 @@ export async function renderBannerSvg(
     preloadAssets([...files]),
   ]);
 
-  return renderBanner(config, {
+  const svg = renderBanner(config, {
     asset: (file) => assetCache.get(file) ?? "",
     bgHref,
     avatarHref,
@@ -205,6 +217,9 @@ export async function renderBannerSvg(
     github,
     views,
   });
+  const complete =
+    !(config.user && needsGithub(config) && !github) && !(config.bg.kind === "url" && !bgHref) && !(avatarEl && github && !avatarHref);
+  return { svg, complete };
 }
 
 /** Embeds Inter, subset to the text actually present in a card SVG. */
