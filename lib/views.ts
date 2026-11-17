@@ -3,13 +3,16 @@ import { createHash } from "node:crypto";
 import { after } from "next/server";
 import { db, sleep } from "./mongo";
 
-// Profile view counter, stored in MongoDB: { _id: "user:<login>", count }.
+// View counters, stored in MongoDB: { _id: "<key>", count }. Profile banners use the
+// "bannerviews" collection with keys "user:<login>"; site pages (see countPageView) use
+// "pageviews" with keys "page:<host><path>".
 // Cold starts need ~1s to connect; stay well inside GitHub's image proxy timeout.
 const WAIT_MS = 2500;
 
 type ViewDoc = { _id: string; count: number; createdAt?: Date };
 
-const collection = () => db()?.then((d) => d.collection<ViewDoc>("bannerviews")) ?? null;
+type Collection = "bannerviews" | "pageviews";
+const collection = (name: Collection) => db()?.then((d) => d.collection<ViewDoc>(name)) ?? null;
 
 // Recent visitors, so one person reloading doesn't inflate the count. Mongo's TTL index expires them.
 const DEDUPE_SECONDS = 30 * 60;
@@ -54,16 +57,25 @@ async function seenRecently(key: string, visitor: string) {
 
 const lastKnown = new Map<string, number>();
 const viewKey = (user: string) => `user:${user.toLowerCase()}`;
+const pageKey = (host: string, path: string) => `page:${host.toLowerCase()}${path}`;
 
 /**
  * Counts one view and returns the new total. Never holds the banner up for long: once this instance
  * knows a total, it answers from memory and the write finishes after the response; otherwise it waits
  * for the database, at most WAIT_MS.
  */
-export async function countView(user: string, visitor: string | null = null): Promise<number | undefined> {
-  const col = collection();
+export function countView(user: string, visitor: string | null = null): Promise<number | undefined> {
+  return countKey("bannerviews", viewKey(user), visitor);
+}
+
+/** Counts one view of `path` on the site `host` (deduped per visitor) and returns the new total. */
+export function countPageView(host: string, path: string, visitor: string | null): Promise<number | undefined> {
+  return countKey("pageviews", pageKey(host, path), visitor);
+}
+
+async function countKey(name: Collection, key: string, visitor: string | null): Promise<number | undefined> {
+  const col = collection(name);
   if (!col) return undefined;
-  const key = viewKey(user);
 
   const write = col
     .then(async (c) => {
@@ -98,10 +110,18 @@ export async function countView(user: string, visitor: string | null = null): Pr
 }
 
 /** Current total without counting (previews). Answers from memory when it can and refreshes after the response. */
-export async function readViews(user: string): Promise<number | undefined> {
-  const col = collection();
+export function readViews(user: string): Promise<number | undefined> {
+  return readKey("bannerviews", viewKey(user));
+}
+
+/** Current total for `path` on the site `host`, without counting. */
+export function readPageViews(host: string, path: string): Promise<number | undefined> {
+  return readKey("pageviews", pageKey(host, path));
+}
+
+async function readKey(name: Collection, key: string): Promise<number | undefined> {
+  const col = collection(name);
   if (!col) return undefined;
-  const key = viewKey(user);
   const read = col
     .then((c) => c.findOne({ _id: key }))
     .then((doc) => {

@@ -145,6 +145,7 @@ Link badges for Discord, GitHub, X, LinkedIn, YouTube, Twitch, Telegram, Reddit,
 | `/api/badge?label=&title=&style=&rank=` | Award badge (`laurel`, `gold`, `aurora`, `minimal`) |
 | `/api/badge/social?platform=&label=&value=&theme=` | Social badge (`profilyze`, `brand`, `outline`, `light`) |
 | `/api/stats/users` | "Profilyze users" badge |
+| `/api/views` | Page views for websites. `POST` with the text body `{"path":"/my-post"}` counts one view; `GET ?path=` reads it. Both answer `{"views": n}`. See [Page views for websites](#page-views-for-websites). |
 
 Add `&preview=1` to a banner URL to render it without counting a view or recording usage.
 
@@ -157,6 +158,23 @@ Repeat views from the same visitor (an anonymous hash of IP and user agent, neve
 Banners with a views counter are sent with `Cache-Control: no-cache`, so GitHub's image proxy fetches them, and counts them, on every view. That stays fast because the rendered banner itself is cached (see Performance); each view only increments the counter and writes the number in. Banners without a counter stay edge-cached. If the database is slow, the banner is still returned after at most 2.5 s, showing the last known count.
 
 The demos above use a separate counter key (`vk=profilyze-readme`), so visits to this README don't count as profile views.
+
+## Page views for websites
+
+`/api/views` counts views of pages on your own site, such as blog posts. Call it from the browser when a page opens:
+
+```js
+fetch('https://profilyze.vercel.app/api/views', {
+  method: 'POST',
+  headers: { 'Content-Type': 'text/plain' },
+  body: JSON.stringify({ path: location.pathname }),
+}).then(r => r.json()).then(({ views }) => console.log(views))
+```
+
+- The site is read from the browser's `Origin` header, so one site cannot count views for another. Each count is stored per host and path.
+- Each visitor counts once per 30 minutes, the same as profile views.
+- `localhost` and `*.local` origins read the total but never count.
+- [Davipress](https://github.com/2hjaito/davipress) sites turn this on with the `views` option.
 
 ## Performance
 
@@ -174,7 +192,8 @@ Environment variables:
 | Variable | Needed for |
 | --- | --- |
 | `TOKEN_GITHUB` (or `GITHUB_TOKEN`) | Stars, commits, PRs, issues, languages and all-time streaks. A classic token with no scopes is enough. Without one, streaks, contributions and the graph still work through GitHub's public contributions page. |
-| `MONGODB_URI` | Profile views, the community gallery and users badge, and `npm run sync:assets` |
+| `MONGODB_URI` | Profile views, page views, the community gallery and users badge, and `npm run sync:assets` |
+| `VIEW_SITES` | Optional. Comma-separated hosts allowed to use `/api/views`, e.g. `dangth.dev,blog.example.com`. Unset lets any site use it. |
 
 ```bash
 npm install
