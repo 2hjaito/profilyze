@@ -76,7 +76,7 @@ function onColor(hex: string) {
 type Node = { type: unknown; props: Record<string, unknown> & { children?: unknown } };
 
 /** Flattens a react-icons component into raw SVG children, scaled into a size×size box at (x, y). */
-function iconSvg(icon: IconType, x: number, y: number, size: number, fill: string) {
+export function iconSvg(icon: IconType, x: number, y: number, size: number, fill: string) {
   const root = icon({}) as unknown as Node;
   const [, , vw, vh] = String((root.props.attr as { viewBox?: string })?.viewBox ?? "0 0 24 24")
     .split(/\s+/)

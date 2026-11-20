@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { FiArrowDown, FiArrowUp, FiCheck, FiCopy, FiDownload, FiEdit2, FiPlus, FiTrash2, FiUser, FiX } from "react-icons/fi";
 import { encodeConfig } from "@/lib/banner/codec";
 import { bannerQuery, DEFAULT_CONFIG, parseConfig, type BannerConfig } from "@/lib/banner/schema";
+import { kitThemes } from "@/lib/cards/kit-meta";
 import { themes } from "@/lib/cards/render";
 import { palettes } from "@/lib/cards/terminal";
 import { vectorIcons } from "@/lib/catalog";
@@ -19,6 +20,7 @@ import {
   normalizeState,
   templates,
   type CardMode,
+  type KitStyle,
   type Links,
   type Project,
   type ReadmeState,
@@ -27,7 +29,7 @@ import {
 import { logoColor, shieldText, stackBadges } from "@/lib/shields";
 import { AUTHOR, SITE_URL } from "@/lib/site";
 import IconPicker from "./editor/IconPicker";
-import { Field, IconButton, inputCls, Panel, Segmented, Select, Toggle } from "./editor/ui";
+import { ColorField, Field, IconButton, inputCls, Panel, Segmented, Select, Toggle } from "./editor/ui";
 import ConfirmDialog from "./ConfirmDialog";
 import { usePersistentState } from "./usePersistentState";
 
@@ -44,6 +46,7 @@ const BADGES: { key: keyof Links; label: string; color: string; logo: string; hr
 ];
 
 const PALETTE_OPTIONS = Object.entries(palettes).map(([value, p]) => ({ value, label: p.label }));
+const KIT_ACCENTS: Record<string, string> = { native: "#fbbf24", clay: "#d2683f", mono: "#e4e4e7" };
 
 /** Query string for the terminal / hexdump / activity cards; mode is left out when it follows the viewer. */
 function cardQuery(params: [string, string][], mode: CardMode) {
@@ -104,6 +107,30 @@ function useLang() {
 
 // ---------- markdown ----------
 
+const attr = (v: string) => v.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+const withProtocol = (url: string) => (/^https?:\/\//.test(url) ? url : `https://${url}`);
+const bareDomain = (url: string) => url.replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/$/, "");
+
+// Profile kit link buttons, by link key.
+const KIT_BUTTONS: Record<keyof Links, { icon: string; label: (v: string) => string }> = {
+  website: { icon: "globe", label: bareDomain },
+  github: { icon: "github", label: () => "GitHub" },
+  linkedin: { icon: "linkedin", label: () => "LinkedIn" },
+  x: { icon: "x", label: (v) => `@${v.replace(/^@/, "")}` },
+  youtube: { icon: "youtube", label: () => "YouTube" },
+  email: { icon: "mail", label: () => "Email" },
+};
+
+// Line icons for kit section labels (native and mono; clay labels are type only).
+const LABEL_ICONS: Partial<Record<SectionId, string>> = {
+  stack: "layers",
+  about: "sparkles",
+  projects: "folder",
+  widgets: "chart",
+  links: "link",
+  philosophy: "book",
+};
+
 function buildMarkdown(s: ReadmeState, bannerQs: string) {
   const user = s.user.trim();
   const name = s.name.trim() || user || "there";
@@ -114,9 +141,44 @@ function buildMarkdown(s: ReadmeState, bannerQs: string) {
   const card = (kind: string) => `${SITE_URL}/api/github/${kind}?user=${encodeURIComponent(user)}&theme=${s.theme}`;
   const api = (q: string) => `${SITE_URL}/api/${q}`;
 
+  // ---- profile kit ----
+  const kit = s.kit !== "off";
+  const kitUrl = (cardName: string, params: [string, string][]) => {
+    const p = new URLSearchParams(params.filter(([, v]) => v));
+    p.set("theme", kit ? s.kit : "native");
+    const accent = s.kitAccent.replace("#", "");
+    if (/^[0-9a-f]{6}$/i.test(accent)) p.set("accent", accent);
+    return `${SITE_URL}/api/kit/${cardName}?${p}`;
+  };
+  // GitHub picks the <source> matching its own theme; a fixed mode gets a single image.
+  const pic = (url: string, alt: string, size: string) =>
+    s.cardMode === "auto"
+      ? `<picture><source media="(prefers-color-scheme: dark)" srcset="${url}&mode=dark" /><img src="${url}&mode=light" alt="${attr(alt)}" ${size} /></picture>`
+      : `<img src="${url}&mode=${s.cardMode}" alt="${attr(alt)}" ${size} />`;
+  const link = (href: string, html: string) => (href ? `<a href="${attr(href)}">${html}</a>` : html);
+  const heading = (text: string, section: SectionId, level = "###") => {
+    if (!text) return;
+    if (!kit) return void out.push(`${level} ${text}`);
+    const icon = s.kit === "clay" ? "" : (LABEL_ICONS[section] ?? "");
+    out.push(`<p>${pic(kitUrl("label", [["text", text], ["icon", icon]]), text, 'width="100%"')}</p>`);
+  };
+
   const render: Record<SectionId, () => void> = {
     header() {
       if (s.headerImage.trim()) block(`  <img src="${s.headerImage.trim()}" alt="${name}" width="100%" />`);
+      if (kit && s.kitHeader) {
+        const url = kitUrl("header", [
+          ["name", name],
+          ["role", s.role.trim()],
+          ["bio", s.blurb.trim()],
+          ["eyebrow", s.eyebrow.trim()],
+          ["link", bareDomain(s.headerLink.trim())],
+          ["user", s.avatar ? user : ""],
+          ["avatar", s.avatar && user ? "1" : ""],
+        ]);
+        const href = s.headerLink.trim() ? withProtocol(s.headerLink.trim()) : "";
+        out.push(`<p>${link(href, pic(url, [name, s.role.trim()].filter(Boolean).join(", "), 'width="100%"'))}</p>`);
+      }
       if (s.banner && bannerQs) out.push(`[![${name}](${SITE_URL}/api/banner?${bannerQs})](${SITE_URL}/?${bannerQs})`);
       if (s.hexdump && (user || s.hexText.trim())) {
         const q = cardQuery(
@@ -141,6 +203,21 @@ function buildMarkdown(s: ReadmeState, bannerQs: string) {
 
     stack() {
       const picked = s.stack.map((id) => vectorIcons.find((i) => i.id === id)).filter((i) => i !== undefined);
+      if (kit) {
+        const groups = lines(s.stackGroups)
+          .slice(0, 4)
+          .map((g) => g.split("|").map((x) => x.trim()))
+          .filter(([title, , ids]) => title && ids)
+          .map(([title, desc = "", ids = ""]) => ["group", `${title}|${desc}|${ids}`] as [string, string]);
+        if (!groups.length && !picked.length) return;
+        heading("Tech stack", "stack");
+        const url = kitUrl("stack", [...groups, ["also", picked.map((i) => i.id).join(",")], ["also_label", groups.length ? s.alsoLabel.trim() : ""]]);
+        const nameOf = (id: string) => vectorIcons.find((i) => i.id === id.trim().toLowerCase())?.label ?? id.trim();
+        const names = [...groups.flatMap(([, g]) => g.split("|")[2].split(",").map(nameOf)), ...picked.map((i) => i.label)];
+        const alt = `Tech stack: ${[...new Set(names)].filter(Boolean).join(", ")}`;
+        out.push(`<p>${pic(url, alt, 'width="100%"')}</p>`);
+        return;
+      }
       if (!picked.length) return;
       if (s.stackStyle === "badges") {
         const badges = picked.map((i) => {
@@ -171,13 +248,43 @@ function buildMarkdown(s: ReadmeState, bannerQs: string) {
     about() {
       const about = lines(s.about);
       if (!about.length) return;
-      if (s.aboutTitle.trim()) out.push(`### ${s.aboutTitle.trim()}`);
+      heading(s.aboutTitle.trim(), "about");
       out.push(about.map((l) => `- ${l}`).join("\n"));
+    },
+
+    numbers() {
+      const items = lines(s.numbers)
+        .slice(0, 4)
+        .map((l): [string, string] => ["item", l.includes("|") ? l : `${l}|`]);
+      if (!items.length && !user) return;
+      // Live values ({stars}…) aren't known here, so their items are described by the label alone.
+      const describe = (item: string) => {
+        const [value, ...rest] = item.split("|").map((x) => x.trim());
+        const label = rest.join(" ");
+        return value.includes("{") ? label : [value, label].filter(Boolean).join(" ");
+      };
+      const alt = items.length ? items.map(([, v]) => describe(v)).join(". ") : `GitHub numbers for ${user}`;
+      out.push(`<p>${pic(kitUrl("numbers", [...items, ["user", user]]), alt, 'width="100%"')}</p>`);
+    },
+
+    interests() {
+      const data = lines(s.interests)
+        .slice(0, 12)
+        .map((l) => {
+          const i = l.lastIndexOf(":");
+          return i < 0 ? "" : `${l.slice(0, i).replace(/,/g, " ").trim()}:${Number(l.slice(i + 1)) || 0}`;
+        })
+        .filter(Boolean);
+      if (data.length < 3 && !user) return;
+      const title = s.interestsTitle.trim();
+      const url = data.length >= 3 ? kitUrl("radar", [["title", title], ["data", data.join(",")]]) : kitUrl("radar", [["title", title], ["user", user]]);
+      out.push(`<p align="center">${pic(url, title || "Radar chart", 'width="460"')}</p>`);
     },
 
     projects() {
       const projects = s.projects.filter((p) => p.name.trim() || p.repo.trim());
       if (!projects.length) return;
+      if (kit) return kitProjects(projects);
       if (s.projectsTitle.trim()) out.push(`## ${s.projectsTitle.trim()}`);
       for (const p of projects) {
         const repo = /^[\w-]+\/[\w.-]+$/.test(p.repo.trim()) ? p.repo.trim() : "";
@@ -198,7 +305,7 @@ function buildMarkdown(s: ReadmeState, bannerQs: string) {
         const url = p.url.trim();
         const badges = [
           url &&
-            `<a href="${/^https?:\/\//.test(url) ? url : `https://${url}`}"><img src="https://img.shields.io/badge/${shieldText(url.replace(/^https?:\/\//, "").replace(/\/$/, ""))}-${color}?style=flat-square&logo=safari&logoColor=white" alt="${title} website" /></a>`,
+            `<a href="${withProtocol(url)}"><img src="https://img.shields.io/badge/${shieldText(bareDomain(url))}-${color}?style=flat-square&logo=safari&logoColor=white" alt="${title} website" /></a>`,
           repo &&
             `<a href="https://github.com/${repo}"><img src="https://img.shields.io/github/stars/${repo}?style=flat-square&logo=github&label=GitHub&color=181717" alt="${title} on GitHub" /></a>`,
         ].filter(Boolean);
@@ -208,7 +315,7 @@ function buildMarkdown(s: ReadmeState, bannerQs: string) {
 
     widgets() {
       if (!user || !(s.streak || s.graph || s.stats || s.languages || s.activity)) return;
-      out.push("### GitHub activity");
+      heading("GitHub activity", "widgets");
       if (s.activity) {
         const q = cardQuery(
           [
@@ -218,6 +325,12 @@ function buildMarkdown(s: ReadmeState, bannerQs: string) {
           s.cardMode,
         );
         block(`  <img src="${api(`activity?${q}`)}" alt="Contributions as a memory map, recent repositories as a call stack" width="100%" />`);
+      }
+      if (kit) {
+        if (s.graph || s.streak) out.push(`<p>${pic(kitUrl("contributions", [["user", user]]), "GitHub contributions in the last year", 'width="100%"')}</p>`);
+        if (s.stats) out.push(`<p>${pic(kitUrl("numbers", [["user", user]]), `GitHub numbers for ${user}`, 'width="100%"')}</p>`);
+        if (s.languages) out.push(`<p align="center">${pic(kitUrl("radar", [["user", user]]), "Top languages", 'width="460"')}</p>`);
+        return;
       }
       if (s.streak) block(`  <img src="${card("streak")}" alt="GitHub streak" />`);
       if (s.graph) block(`  <img src="${card("graph")}" alt="Contribution graph" />`);
@@ -229,23 +342,76 @@ function buildMarkdown(s: ReadmeState, bannerQs: string) {
     },
 
     links() {
-      const links = BADGES.filter((b) => s.links[b.key].trim()).map(
+      const set = BADGES.filter((b) => s.links[b.key].trim());
+      if (!set.length) return;
+      if (kit) {
+        heading("Connect", "links");
+        const buttons = set.map((b) => {
+          const v = s.links[b.key].trim();
+          const k = KIT_BUTTONS[b.key];
+          return `  ${link(b.href(v), pic(kitUrl("button", [["label", k.label(v)], ["icon", k.icon]]), b.label, 'height="40"'))}`;
+        });
+        block(buttons.join("\n"));
+        return;
+      }
+      const links = set.map(
         (b) =>
           `  <a href="${b.href(s.links[b.key].trim())}"><img src="https://img.shields.io/badge/${encodeURIComponent(b.label)}-${b.color}?style=${s.badgeStyle}&logo=${b.logo}&logoColor=white" alt="${b.label}" /></a>`,
       );
-      if (!links.length) return;
       out.push("### Connect with me");
       block(links.join("\n"));
     },
 
     philosophy() {
       if (!s.quote.trim() && !s.quoteText.trim()) return;
-      out.push("---");
-      if (s.quoteTitle.trim()) out.push(`### ${s.quoteTitle.trim()}`);
+      if (!kit) out.push("---");
+      heading(s.quoteTitle.trim(), "philosophy");
       if (s.quote.trim()) out.push(`> ${s.quote.trim()}`);
       if (s.quoteText.trim()) out.push(lines(s.quoteText).join("\n\n"));
     },
   };
+
+  /** First project wide, then two per row; small ones three per row. */
+  function kitProjects(projects: Project[]) {
+    heading(s.projectsTitle.trim(), "projects", "##");
+    const big = projects.filter((p) => !p.small);
+    const small = projects.filter((p) => p.small);
+    const cardFor = (p: Project, size: "feature" | "half" | "small", i: number, width: string, reserve = false) => {
+      const repo = /^[\w-]+\/[\w.-]+$/.test(p.repo.trim()) ? p.repo.trim() : "";
+      const title = p.name.trim() || repo.split("/")[1];
+      const url = p.url.trim();
+      const params: [string, string][] = [
+        ["size", size],
+        ["repo", repo],
+        ["title", p.name.trim()],
+        ["tagline", p.tagline.trim()],
+        ["desc", p.desc.trim()],
+        ["tags", p.tags.trim()],
+        ["meta", p.meta.trim()],
+        ["status", p.status.trim()],
+        ["image", size === "small" ? "" : p.image.trim()],
+        ["num", s.kit === "clay" && size !== "small" ? String(i + 1).padStart(2, "0") : ""],
+        ["reserve", reserve && !p.image.trim() ? "1" : ""],
+      ];
+      if (url) params.push(["eyebrow", bareDomain(url)]);
+      const href = url ? withProtocol(url) : repo ? `https://github.com/${repo}` : "";
+      return link(href, pic(kitUrl("project", params), [title, p.tagline.trim() || p.desc.trim()].filter(Boolean).join(": "), `width="${width}"`));
+    };
+    if (big.length) out.push(`<p>${cardFor(big[0], "feature", 0, "100%")}</p>`);
+    for (let i = 1; i < big.length; i += 2) {
+      // A space between the two keeps them apart; 49% leaves room for it.
+      const row = big.slice(i, i + 2);
+      // If one card in the row has a screenshot, the other keeps the space so their heights match.
+      const reserve = row.some((p) => p.image.trim());
+      out.push(`<p>\n${row.map((p, j) => `  ${cardFor(p, "half", i + j, "49%", reserve)}`).join("\n")}\n</p>`);
+    }
+    for (let i = 0; i < small.length; i += 3) {
+      out.push(`<p>\n${small
+        .slice(i, i + 3)
+        .map((p, j) => `  ${cardFor(p, "small", big.length + i + j, "32.5%")}`)
+        .join("\n")}\n</p>`);
+    }
+  }
 
   for (const id of s.sections) render[id]?.();
   out.push(`<sub>Made with [Profilyze](${SITE_URL})</sub>`);
@@ -313,7 +479,8 @@ export default function ReadmeBuilder() {
       .replaceAll(SITE_URL, "")
       .replace(/\/api\/(banner|profile\/banner)\?([^)"\s]+)/g, "/api/$1?$2&preview=1")
       // The preview pane is dark; cards that follow the viewer's colour scheme are shown dark there.
-      .replace(/\/api\/(terminal|hexdump|activity)\?([^)"\s]+)/g, (m) => (m.includes("mode=") ? m : `${m}&mode=dark`));
+      .replace(/\/api\/(terminal|hexdump|activity)\?([^)"\s]+)/g, (m) => (m.includes("mode=") ? m : `${m}&mode=dark`))
+      .replace(/<picture><source media="\(prefers-color-scheme: dark\)" srcset="([^"]+)" \/><img src="[^"]+"([^>]*)\/><\/picture>/g, '<img src="$1"$2/>');
     return marked.parse(local, { async: false }) as string;
   }, [markdown]);
 
@@ -547,6 +714,26 @@ export default function ReadmeBuilder() {
                 ]}
                 onChange={(v) => set("cardMode", v)}
               />
+              <Select<KitStyle>
+                label={t.kitStyle}
+                value={s.kit}
+                options={[
+                  { value: "off", label: t.kitOff },
+                  ...Object.entries(kitThemes).map(([value, k]) => ({ value: value as KitStyle, label: `${k.label} · ${k.desc}` })),
+                ]}
+                onChange={(v) => set("kit", v)}
+              />
+              <p className="-mt-1 text-xs text-muted">{t.kitHint}</p>
+              {s.kit !== "off" && (
+                <div className="space-y-1">
+                  <ColorField label={t.kitAccent} value={s.kitAccent || KIT_ACCENTS[s.kit]} onChange={(v) => set("kitAccent", v)} />
+                  {s.kitAccent && (
+                    <button type="button" onClick={() => set("kitAccent", "")} className="text-xs text-accent hover:underline">
+                      {t.reset}
+                    </button>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -596,6 +783,28 @@ function SectionBody({
     case "header":
       return (
         <>
+          {s.kit !== "off" && (
+            <>
+              <Toggle label={t.kitHeader} checked={s.kitHeader} onChange={(v) => set("kitHeader", v)} />
+              {s.kitHeader && (
+                <div className="space-y-3 rounded-lg border border-line bg-bg/40 p-3">
+                  <Field label={t.eyebrow}>
+                    <input className={inputCls} value={s.eyebrow} placeholder="Hanoi · Building in public" onChange={(e) => set("eyebrow", e.target.value)} />
+                  </Field>
+                  <Field label={t.role}>
+                    <input className={inputCls} value={s.role} placeholder="Fullstack developer" onChange={(e) => set("role", e.target.value)} />
+                  </Field>
+                  <Field label={t.blurb}>
+                    <textarea className={`${inputCls} min-h-16 resize-y`} value={s.blurb} onChange={(e) => set("blurb", e.target.value)} />
+                  </Field>
+                  <Field label={t.headerLink}>
+                    <input className={inputCls} value={s.headerLink} placeholder="example.com" onChange={(e) => set("headerLink", e.target.value)} />
+                  </Field>
+                  <Toggle label={t.avatar} checked={s.avatar} onChange={(v) => set("avatar", v)} />
+                </div>
+              )}
+            </>
+          )}
           <Toggle label={t.useBanner} checked={s.banner} onChange={(v) => set("banner", v)} />
           {s.banner && (
             <Link href="/" className="flex items-center gap-1 text-xs text-accent hover:underline">
@@ -649,7 +858,24 @@ function SectionBody({
     case "stack":
       return (
         <>
-          <div className="flex items-center gap-3">
+          {s.kit !== "off" && (
+            <>
+              <Field label={t.stackGroups} hint={t.stackGroupsHint}>
+                <textarea
+                  className={`${inputCls} min-h-24 resize-y font-mono text-xs`}
+                  value={s.stackGroups}
+                  placeholder={"Backend | APIs that stay up | java,spring,postgresql"}
+                  onChange={(e) => set("stackGroups", e.target.value)}
+                />
+              </Field>
+              {s.stackGroups.trim() && (
+                <Field label={t.alsoLabel}>
+                  <input className={inputCls} value={s.alsoLabel} onChange={(e) => set("alsoLabel", e.target.value)} />
+                </Field>
+              )}
+            </>
+          )}
+          <div className={`flex items-center gap-3 ${s.kit !== "off" ? "hidden" : ""}`}>
             <div className="flex-1">
               <Segmented
                 value={s.stackStyle}
@@ -707,6 +933,7 @@ function SectionBody({
             <input className={inputCls} value={s.projectsTitle} onChange={(e) => set("projectsTitle", e.target.value)} />
           </Field>
           {!s.projects.length && <p className="text-xs text-muted">{t.noProjects}</p>}
+          {s.kit !== "off" && s.projects.length > 0 && <p className="text-xs text-muted">{t.kitProjectsHint}</p>}
           {s.projects.map((p, i) => (
             <div key={i} className="space-y-2 rounded-lg border border-line bg-bg/40 p-3">
               <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-2">
@@ -728,13 +955,43 @@ function SectionBody({
               <Field label={t.projectDesc}>
                 <textarea className={`${inputCls} min-h-16 resize-y`} value={p.desc} onChange={(e) => setProject(i, { desc: e.target.value })} />
               </Field>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label={t.projectUrl}>
-                  <input className={inputCls} value={p.url} placeholder="example.com" onChange={(e) => setProject(i, { url: e.target.value })} />
-                </Field>
-                <Select label={t.projectPalette} value={p.palette} options={PALETTE_OPTIONS} onChange={(v) => setProject(i, { palette: v })} />
-              </div>
-              <Toggle label={t.projectCard} checked={p.card} onChange={(v) => setProject(i, { card: v })} />
+              {s.kit === "off" ? (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Field label={t.projectUrl}>
+                      <input className={inputCls} value={p.url} placeholder="example.com" onChange={(e) => setProject(i, { url: e.target.value })} />
+                    </Field>
+                    <Select label={t.projectPalette} value={p.palette} options={PALETTE_OPTIONS} onChange={(v) => setProject(i, { palette: v })} />
+                  </div>
+                  <Toggle label={t.projectCard} checked={p.card} onChange={(v) => setProject(i, { card: v })} />
+                </>
+              ) : (
+                <>
+                  <Field label={t.projectTagline}>
+                    <input className={inputCls} value={p.tagline} onChange={(e) => setProject(i, { tagline: e.target.value })} />
+                  </Field>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Field label={t.projectUrl}>
+                      <input className={inputCls} value={p.url} placeholder="example.com" onChange={(e) => setProject(i, { url: e.target.value })} />
+                    </Field>
+                    <Field label={t.projectMeta}>
+                      <input className={inputCls} value={p.meta} placeholder="2025 · iOS" onChange={(e) => setProject(i, { meta: e.target.value })} />
+                    </Field>
+                    <Field label={t.projectStatus}>
+                      <input className={inputCls} value={p.status} placeholder="Live · v1.2" onChange={(e) => setProject(i, { status: e.target.value })} />
+                    </Field>
+                    <Field label={t.projectTags}>
+                      <input className={inputCls} value={p.tags} placeholder="Rust, TypeScript" onChange={(e) => setProject(i, { tags: e.target.value })} />
+                    </Field>
+                  </div>
+                  {!p.small && (
+                    <Field label={t.projectImage} hint={t.projectImageHint}>
+                      <input className={inputCls} value={p.image} placeholder="og" onChange={(e) => setProject(i, { image: e.target.value.trim() })} />
+                    </Field>
+                  )}
+                  <Toggle label={t.projectSmall} checked={p.small} onChange={(v) => setProject(i, { small: v })} />
+                </>
+              )}
             </div>
           ))}
           <button
@@ -757,6 +1014,7 @@ function SectionBody({
             <Toggle label={t.languages} checked={s.languages} onChange={(v) => set("languages", v)} />
             <Toggle label={t.activity} checked={s.activity} onChange={(v) => set("activity", v)} />
           </div>
+          {s.kit !== "off" && <p className="text-xs text-muted">{t.kitWidgetsHint}</p>}
           <Select
             label={t.theme}
             value={s.theme}
@@ -789,6 +1047,35 @@ function SectionBody({
               </Field>
             ))}
           </div>
+        </>
+      );
+
+    case "numbers":
+      return (
+        <Field label={t.numbersLines} hint={t.numbersHint}>
+          <textarea
+            className={`${inputCls} min-h-24 resize-y font-mono text-xs`}
+            value={s.numbers}
+            placeholder={"5 yrs | building production systems\n{repos} | public repositories\n{stars} | stars on GitHub"}
+            onChange={(e) => set("numbers", e.target.value)}
+          />
+        </Field>
+      );
+
+    case "interests":
+      return (
+        <>
+          <Field label={t.interestsTitle}>
+            <input className={inputCls} value={s.interestsTitle} onChange={(e) => set("interestsTitle", e.target.value)} />
+          </Field>
+          <Field label={t.interestsLines} hint={t.interestsHint}>
+            <textarea
+              className={`${inputCls} min-h-32 resize-y font-mono text-xs`}
+              value={s.interests}
+              placeholder={"Frontend: 8\nBackend: 6\nDesign: 5\nAI: 7"}
+              onChange={(e) => set("interests", e.target.value)}
+            />
+          </Field>
         </>
       );
 
@@ -880,6 +1167,34 @@ function TemplateSketch({ blocks }: { blocks: Sketch[] }) {
             );
           case "quote":
             return <div key={i} className={`ml-0 h-1.5 w-2/3 shrink-0 border-l-2 border-zinc-500 pl-1 ${bar}`} />;
+          case "tiles":
+            return (
+              <div key={i} className="grid h-5 shrink-0 grid-cols-2 gap-1">
+                {[0, 1].map((k) => (
+                  <div key={k} className="flex flex-col justify-end gap-0.5 rounded border border-zinc-700 p-0.5">
+                    <div className="h-1 w-1/2 rounded-sm bg-amber-400/70" />
+                    <div className={`h-0.5 w-full ${bar}`} />
+                  </div>
+                ))}
+              </div>
+            );
+          case "stats":
+            return (
+              <div key={i} className="flex h-3 shrink-0 items-end divide-x divide-zinc-700 border-y border-zinc-700 py-0.5">
+                {[0, 1, 2].map((k) => (
+                  <div key={k} className="flex-1 px-1">
+                    <div className="h-1.5 w-3/5 rounded-sm bg-zinc-300/80" />
+                  </div>
+                ))}
+              </div>
+            );
+          case "radar":
+            return (
+              <svg key={i} viewBox="0 0 40 20" className="h-5 shrink-0 self-center">
+                <polygon points="20,1 31,6 31,14 20,19 9,14 9,6" fill="none" stroke="#52525b" strokeWidth=".8" />
+                <polygon points="20,5 28,8 24,13 20,16 12,12 14,7" fill="#a1a1aa55" stroke="#d4d4d8" strokeWidth=".8" />
+              </svg>
+            );
         }
       })}
     </div>

@@ -241,3 +241,47 @@ export async function embedMonoFonts(svg: string): Promise<string> {
   const faces = await Promise.all([400, 700].map((w) => fontFace(`jetbrains-mono:${w}`, chars)));
   return svg.replace("<style>", `<style>${faces.join("")}`);
 }
+
+/** Embeds the given faces ("inter:400", "newsreader:400"…), each subset to the text in the SVG. */
+export async function embedFonts(svg: string, faces: string[]): Promise<string> {
+  const chars = [...svg.matchAll(/>([^<>]+)</g)]
+    .map((m) => m[1])
+    .join("")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)));
+  const css = await Promise.all(faces.map((f) => fontFace(f, chars)));
+  return svg.replace("<style>", `<style>${css.join("")}`);
+}
+
+const MAX_CARD_IMAGE_BYTES = 8 * 1024 * 1024;
+
+/**
+ * A remote image for a card (a screenshot, an avatar), re-encoded as a still WebP at most `width`
+ * pixels wide, so the card stays light. Only http(s) URLs; null on any failure.
+ */
+export async function fetchCardImage(url: string, width: number): Promise<string | null> {
+  try {
+    const { protocol } = new URL(url);
+    if (protocol !== "https:" && protocol !== "http:") return null;
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok || Number(res.headers.get("content-length")) > MAX_CARD_IMAGE_BYTES) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > MAX_CARD_IMAGE_BYTES || !sniffImage(buf)) return null;
+    const out = await sharp(buf, { limitInputPixels: 1e8 })
+      .resize({ width, withoutEnlargement: true })
+      .webp({ quality: 74, effort: 3 })
+      .toBuffer();
+    return toDataUri("image/webp", out);
+  } catch {
+    return null;
+  }
+}
+
+/** A bundled devicon logo as a data URI, or null for an unknown id. */
+export async function deviconHref(id: string): Promise<string | null> {
+  if (!/^[a-z0-9]+$/.test(id)) return null;
+  try {
+    return toDataUri("image/svg+xml", await readPublic(`assets/devicon/${id}.svg`));
+  } catch {
+    return null;
+  }
+}

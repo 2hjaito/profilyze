@@ -1,12 +1,30 @@
 // README generator state and the templates that preset it.
 
+import type { KitTheme } from "../cards/kit-meta";
 import { AUTHOR } from "../site";
 import type { Lang, SectionId } from "./i18n";
 
 export type Links = { website: string; github: string; linkedin: string; x: string; youtube: string; email: string };
-export type Project = { name: string; repo: string; desc: string; url: string; palette: string; card: boolean };
+export type Project = {
+  name: string;
+  repo: string;
+  desc: string;
+  url: string;
+  palette: string;
+  card: boolean;
+  // Profile kit cards only
+  tagline: string;
+  tags: string;
+  meta: string;
+  status: string;
+  /** Screenshot URL, or "og" for GitHub's preview image of the repository. */
+  image: string;
+  small: boolean;
+};
 export type CardMode = "auto" | "dark" | "light";
-export type TemplateId = "classic" | "terminal" | "debugger" | "minimal";
+/** "off" writes plain Markdown and shields; otherwise headings, links and projects become profile kit cards. */
+export type KitStyle = "off" | KitTheme;
+export type TemplateId = "classic" | "terminal" | "debugger" | "minimal" | "editorial" | "native" | "studio";
 
 export type ReadmeState = {
   template: TemplateId;
@@ -16,11 +34,19 @@ export type ReadmeState = {
   align: "left" | "center";
   palette: string;
   cardMode: CardMode;
+  kit: KitStyle;
+  kitAccent: string;
   // header
   headerImage: string;
   banner: boolean;
   hexdump: boolean;
   hexText: string;
+  kitHeader: boolean;
+  role: string;
+  eyebrow: string;
+  blurb: string;
+  headerLink: string;
+  avatar: boolean;
   // intro / bio
   greeting: string;
   tagline: string;
@@ -31,9 +57,17 @@ export type ReadmeState = {
   about: string;
   stack: string[];
   stackStyle: "logos" | "badges";
+  /** Profile kit stack groups, one per line: Title | Description | ids */
+  stackGroups: string;
+  alsoLabel: string;
   terminalRows: string;
   projectsTitle: string;
   projects: Project[];
+  /** value | label, one per line */
+  numbers: string;
+  interestsTitle: string;
+  /** Label: value, one per line */
+  interests: string;
   // widgets
   streak: boolean;
   graph: boolean;
@@ -49,14 +83,58 @@ export type ReadmeState = {
   quoteText: string;
 };
 
-export const ALL_SECTIONS: SectionId[] = ["header", "intro", "stack", "bio", "identity", "about", "projects", "widgets", "links", "philosophy"];
+export const ALL_SECTIONS: SectionId[] = [
+  "header",
+  "intro",
+  "stack",
+  "bio",
+  "identity",
+  "about",
+  "numbers",
+  "interests",
+  "projects",
+  "widgets",
+  "links",
+  "philosophy",
+];
 
-export const NEW_PROJECT: Project = { name: "", repo: "", desc: "", url: "", palette: "ember", card: true };
+export const NEW_PROJECT: Project = {
+  name: "",
+  repo: "",
+  desc: "",
+  url: "",
+  palette: "ember",
+  card: true,
+  tagline: "",
+  tags: "",
+  meta: "",
+  status: "",
+  image: "",
+  small: false,
+};
 
 /** Content each template writes, in the UI language. */
 type Sample = Pick<
   ReadmeState,
-  "greeting" | "tagline" | "bio" | "aboutTitle" | "about" | "hexText" | "terminalRows" | "projectsTitle" | "quoteTitle" | "quote" | "quoteText"
+  | "greeting"
+  | "tagline"
+  | "bio"
+  | "aboutTitle"
+  | "about"
+  | "hexText"
+  | "terminalRows"
+  | "projectsTitle"
+  | "quoteTitle"
+  | "quote"
+  | "quoteText"
+  | "role"
+  | "eyebrow"
+  | "blurb"
+  | "numbers"
+  | "interestsTitle"
+  | "interests"
+  | "stackGroups"
+  | "alsoLabel"
 >;
 
 const BLANK: Sample = {
@@ -71,10 +149,18 @@ const BLANK: Sample = {
   quoteTitle: "",
   quote: "",
   quoteText: "",
+  role: "",
+  eyebrow: "",
+  blurb: "",
+  numbers: "",
+  interestsTitle: "",
+  interests: "",
+  stackGroups: "",
+  alsoLabel: "",
 };
 
 /** Skeleton blocks drawn in the template picker. */
-export type Sketch = "image" | "title" | "line" | "pills" | "logos" | "card" | "list" | "grid" | "hex" | "quote";
+export type Sketch = "image" | "title" | "line" | "pills" | "logos" | "card" | "list" | "grid" | "hex" | "quote" | "tiles" | "stats" | "radar";
 
 export type Template = {
   id: TemplateId;
@@ -108,6 +194,8 @@ export const templates: Template[] = [
       languages: true,
       activity: false,
       badgeStyle: "for-the-badge",
+      kit: "off",
+      kitHeader: false,
     },
     sample: {
       en: {
@@ -136,6 +224,8 @@ export const templates: Template[] = [
       palette: "aurora",
       stackStyle: "badges",
       badgeStyle: "flat-square",
+      kit: "off",
+      kitHeader: false,
     },
     sample: {
       en: {
@@ -189,6 +279,8 @@ export const templates: Template[] = [
       languages: true,
       activity: true,
       badgeStyle: "flat-square",
+      kit: "off",
+      kitHeader: false,
     },
     sample: {
       en: {
@@ -216,10 +308,146 @@ export const templates: Template[] = [
     },
     sketch: ["title", "line", "pills", "pills"],
     sections: ["intro", "stack", "links"],
-    settings: { align: "center", stackStyle: "badges", badgeStyle: "flat-square" },
+    settings: { align: "center", stackStyle: "badges", badgeStyle: "flat-square", kit: "off", kitHeader: false },
     sample: {
       en: { ...BLANK, greeting: "Hi, I'm {name} 👋", tagline: "Developer · Open source · Coffee" },
       vi: { ...BLANK, greeting: "Xin chào, mình là {name} 👋", tagline: "Developer · Open source · Cà phê" },
+    },
+  },
+  {
+    id: "editorial",
+    name: { en: "Editorial", vi: "Tạp chí" },
+    desc: {
+      en: "Warm paper and a serif headline: a framed header, project cards with screenshots, your numbers and stack.",
+      vi: "Tông giấy ấm, tiêu đề chữ có chân: header đóng khung, card dự án có ảnh chụp, số liệu và tech stack.",
+    },
+    sketch: ["image", "tiles", "stats", "pills"],
+    sections: ["header", "projects", "numbers", "stack", "widgets", "links"],
+    settings: {
+      kit: "clay",
+      kitHeader: true,
+      avatar: false,
+      align: "left",
+      banner: false,
+      hexdump: false,
+      headerImage: "",
+      streak: false,
+      graph: true,
+      stats: false,
+      languages: false,
+      activity: false,
+    },
+    sample: {
+      en: {
+        ...BLANK,
+        eyebrow: "Somewhere on Earth · Building in public",
+        role: "I build websites, apps and the occasional thing nobody asked for.",
+        blurb: "Home is where the laptop is.",
+        projectsTitle: "Things I’ve launched",
+        alsoLabel: "Also in the toolbox",
+      },
+      vi: {
+        ...BLANK,
+        eyebrow: "Việt Nam · Build in public",
+        role: "Mình làm website, app và thỉnh thoảng vài thứ chẳng ai nhờ.",
+        blurb: "Laptop ở đâu thì nhà ở đó.",
+        projectsTitle: "Những thứ mình đã ra mắt",
+        alsoLabel: "Còn dùng thêm",
+      },
+    },
+  },
+  {
+    id: "native",
+    name: { en: "Native", vi: "Native" },
+    desc: {
+      en: "Looks like part of GitHub, with one amber accent: header, numbers, what you're doing now, activity, projects and a grouped stack.",
+      vi: "Như một phần của GitHub, thêm một màu nhấn hổ phách: header, số liệu, việc đang làm, hoạt động, dự án và tech stack theo nhóm.",
+    },
+    sketch: ["title", "stats", "list", "grid", "tiles"],
+    sections: ["header", "bio", "numbers", "about", "widgets", "projects", "stack", "links"],
+    settings: {
+      kit: "native",
+      kitHeader: true,
+      avatar: true,
+      align: "left",
+      banner: false,
+      hexdump: false,
+      headerImage: "",
+      streak: false,
+      graph: true,
+      stats: false,
+      languages: false,
+      activity: false,
+    },
+    sample: {
+      en: {
+        ...BLANK,
+        role: "Software Engineer · Technical Lead",
+        blurb: "Distributed systems at work, my own products the rest of the time.",
+        bio: "A couple of sentences about what you do at work and what you build in your own time.",
+        numbers: "5 yrs | building and running production systems\n{repos} | public repositories\n{stars} | stars on GitHub",
+        aboutTitle: "Now",
+        about: "**Building:** …\n**Shipping:** …\n**At work:** …\n**Learning:** …",
+        projectsTitle: "Projects",
+        stackGroups: "Backend | APIs and services that stay up under load. | java,spring,postgresql,redis\nFrontend | Interfaces people enjoy using. | typescript,react,nextjs,tailwindcss",
+        alsoLabel: "Also in the toolbox",
+      },
+      vi: {
+        ...BLANK,
+        role: "Kỹ sư phần mềm · Technical Lead",
+        blurb: "Hệ thống phân tán ở công ty, sản phẩm riêng lúc rảnh.",
+        bio: "Vài câu về công việc chính và những gì bạn tự làm trong thời gian riêng.",
+        numbers: "5 năm | xây và vận hành hệ thống thực tế\n{repos} | repo công khai\n{stars} | sao trên GitHub",
+        aboutTitle: "Hiện tại",
+        about: "**Đang làm:** …\n**Sắp ra mắt:** …\n**Ở công ty:** …\n**Đang học:** …",
+        projectsTitle: "Dự án",
+        stackGroups: "Backend | API và dịch vụ chạy ổn định khi tải cao. | java,spring,postgresql,redis\nFrontend | Giao diện dùng thích tay. | typescript,react,nextjs,tailwindcss",
+        alsoLabel: "Còn dùng thêm",
+      },
+    },
+  },
+  {
+    id: "studio",
+    name: { en: "Studio", vi: "Studio" },
+    desc: {
+      en: "Quiet greys in double frames: link buttons up top, a few lines about you, a grid of projects and an interests radar.",
+      vi: "Tông xám nhẹ, khung đôi: nút liên kết trên cùng, vài dòng về bạn, lưới dự án và biểu đồ radar sở thích.",
+    },
+    sketch: ["image", "pills", "list", "tiles", "radar"],
+    sections: ["header", "links", "about", "projects", "interests", "widgets"],
+    settings: {
+      kit: "mono",
+      kitHeader: true,
+      avatar: false,
+      align: "left",
+      banner: false,
+      hexdump: false,
+      headerImage: "",
+      streak: false,
+      graph: false,
+      stats: true,
+      languages: false,
+      activity: false,
+    },
+    sample: {
+      en: {
+        ...BLANK,
+        role: "Interaction and visual designer",
+        aboutTitle: "About me",
+        about: "Designer and developer from …\nI run a small studio, …\nI daily drive … and love customising everything",
+        projectsTitle: "Projects",
+        interestsTitle: "My Interests",
+        interests: "Design: 9\nFrontend: 8\nMotion: 6\nOpen source: 7\nBackend: 5\nHardware: 3",
+      },
+      vi: {
+        ...BLANK,
+        role: "Designer giao diện và tương tác",
+        aboutTitle: "Về mình",
+        about: "Designer kiêm developer đến từ …\nMình có một studio nhỏ, …\nMình dùng … hằng ngày và thích tuỳ biến mọi thứ",
+        projectsTitle: "Dự án",
+        interestsTitle: "Mình quan tâm",
+        interests: "Thiết kế: 9\nFrontend: 8\nChuyển động: 6\nOpen source: 7\nBackend: 5\nPhần cứng: 3",
+      },
     },
   },
 ];
@@ -240,10 +468,18 @@ export const INITIAL: ReadmeState = {
   align: "center",
   palette: "aurora",
   cardMode: "auto",
+  kit: "off",
+  kitAccent: "",
   headerImage: "",
   banner: true,
   hexdump: false,
   hexText: "",
+  kitHeader: false,
+  role: "",
+  eyebrow: "",
+  blurb: "",
+  headerLink: "",
+  avatar: false,
   greeting: "Hi there 👋, I'm {name}",
   tagline: "",
   bio: "",
@@ -252,9 +488,14 @@ export const INITIAL: ReadmeState = {
   about: "🔭 I'm currently working on …\n🌱 I'm learning …\n💬 Ask me about …\n⚡ Fun fact: …",
   stack: ["typescript", "react", "nodejs", "docker"],
   stackStyle: "logos",
+  stackGroups: "",
+  alsoLabel: "Also in the toolbox",
   terminalRows: "",
   projectsTitle: "What I'm building",
   projects: [],
+  numbers: "",
+  interestsTitle: "My Interests",
+  interests: "",
   streak: true,
   graph: true,
   stats: true,
@@ -275,6 +516,7 @@ export function normalizeState(saved: ReadmeState): ReadmeState {
     ...saved,
     sections,
     template: templates.some((t) => t.id === saved.template) ? saved.template : "classic",
+    kit: (["off", "native", "clay", "mono"] as const).includes(saved.kit) ? saved.kit : "off",
     links: { ...INITIAL.links, ...saved.links },
     projects: (Array.isArray(saved.projects) ? saved.projects : []).map((p) => ({ ...NEW_PROJECT, ...p })),
   };

@@ -176,6 +176,8 @@ export const fonts: FontDef[] = [
   { id: "bebas-neue", family: "Bebas Neue", weights: [400] },
   { id: "allerta", family: "Allerta", weights: [400] },
   { id: "ar-one-sans", family: "AR One Sans", weights: [400, 700] },
+  // Static instances of the variable font (opsz 72), made with subset-font; OFL.
+  { id: "newsreader", family: "Newsreader", weights: [400, 600] },
 ];
 
 export const findFont = (id?: string | null) => fonts.find((f) => f.id === id) ?? fonts[0];

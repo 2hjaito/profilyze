@@ -82,6 +82,35 @@ const en = {
   quoteTitle: "Heading",
   quote: "Quote",
   quoteText: "Story (optional)",
+  // card style (profile kit)
+  kitStyle: "Card style",
+  kitOff: "Plain Markdown",
+  kitHint: "A card style turns the header, headings, projects, stack and links into matching cards.",
+  kitAccent: "Accent colour (optional)",
+  reset: "Use the style's own colour",
+  kitHeader: "Show a designed header card",
+  role: "Role",
+  eyebrow: "Small line above your name",
+  blurb: "One or two lines about you",
+  headerLink: "Link on the card",
+  avatar: "Show your GitHub avatar",
+  projectTagline: "Tagline",
+  projectTags: "Tags (comma separated)",
+  projectMeta: "Corner note (year, platform…)",
+  projectStatus: "Status",
+  projectImage: "Screenshot",
+  projectImageHint: "A link to an image, or og for GitHub's preview of the repository.",
+  projectSmall: "Small card (three per row)",
+  kitProjectsHint: "The first project gets a wide card, the rest go two per row.",
+  stackGroups: "Groups (optional)",
+  stackGroupsHint: "One per line: Title | Description | logos, e.g. Backend | APIs that stay up | java,spring,postgresql. The logos picked below follow the groups.",
+  alsoLabel: "Label above the other logos",
+  numbersLines: "Numbers",
+  numbersHint: "Up to 4, one per line: value | label. Live values: {repos} {stars} {followers} {commits} {contribs} {total} {longest}. Leave empty to show your GitHub numbers.",
+  interestsTitle: "Title",
+  interestsLines: "Values",
+  interestsHint: "3 to 12 lines as Label: value, from 0 to 10. Leave empty to chart your top languages.",
+  kitWidgetsHint: "With a card style, the graph and streak become one contributions card, stats a row of numbers and languages a radar.",
   // preview
   preview: "Preview",
   markdown: "Markdown",
@@ -161,6 +190,34 @@ const vi: Dict = {
   quoteTitle: "Tiêu đề",
   quote: "Câu châm ngôn",
   quoteText: "Câu chuyện (không bắt buộc)",
+  kitStyle: "Kiểu card",
+  kitOff: "Markdown thường",
+  kitHint: "Chọn một kiểu card để header, tiêu đề, dự án, tech stack và liên kết thành các card đồng bộ.",
+  kitAccent: "Màu nhấn (không bắt buộc)",
+  reset: "Dùng màu mặc định của kiểu card",
+  kitHeader: "Hiện card header được thiết kế sẵn",
+  role: "Vai trò",
+  eyebrow: "Dòng nhỏ phía trên tên",
+  blurb: "Một hai dòng về bạn",
+  headerLink: "Link trên card",
+  avatar: "Hiện avatar GitHub",
+  projectTagline: "Câu giới thiệu",
+  projectTags: "Tag (cách nhau bởi dấu phẩy)",
+  projectMeta: "Ghi chú ở góc (năm, nền tảng…)",
+  projectStatus: "Trạng thái",
+  projectImage: "Ảnh chụp màn hình",
+  projectImageHint: "Link ảnh, hoặc og để dùng ảnh xem trước của repo trên GitHub.",
+  projectSmall: "Card nhỏ (ba card một hàng)",
+  kitProjectsHint: "Dự án đầu tiên dùng card rộng, các dự án sau xếp hai card một hàng.",
+  stackGroups: "Nhóm (không bắt buộc)",
+  stackGroupsHint: "Mỗi dòng một nhóm: Tiêu đề | Mô tả | logo, ví dụ Backend | API chạy ổn định | java,spring,postgresql. Các logo chọn bên dưới nằm sau các nhóm.",
+  alsoLabel: "Dòng chữ phía trên các logo còn lại",
+  numbersLines: "Các con số",
+  numbersHint: "Tối đa 4, mỗi dòng: giá trị | nhãn. Giá trị tự điền: {repos} {stars} {followers} {commits} {contribs} {total} {longest}. Để trống sẽ hiện số liệu GitHub.",
+  interestsTitle: "Tiêu đề",
+  interestsLines: "Các giá trị",
+  interestsHint: "Từ 3 đến 12 dòng dạng Nhãn: giá trị, từ 0 đến 10. Để trống sẽ vẽ các ngôn ngữ bạn dùng nhiều.",
+  kitWidgetsHint: "Khi dùng kiểu card, biểu đồ và streak gộp thành một card đóng góp, thống kê thành hàng số liệu, ngôn ngữ thành radar.",
   preview: "Xem trước",
   markdown: "Markdown",
   download: "Tải về",
@@ -171,7 +228,19 @@ const vi: Dict = {
 
 export const dicts: Record<Lang, Dict> = { en, vi };
 
-export type SectionId = "header" | "intro" | "stack" | "bio" | "identity" | "about" | "projects" | "widgets" | "links" | "philosophy";
+export type SectionId =
+  | "header"
+  | "intro"
+  | "stack"
+  | "bio"
+  | "identity"
+  | "about"
+  | "numbers"
+  | "interests"
+  | "projects"
+  | "widgets"
+  | "links"
+  | "philosophy";
 
 export const sectionText: Record<Lang, Record<SectionId, { title: string; desc: string }>> = {
   en: {
@@ -181,6 +250,8 @@ export const sectionText: Record<Lang, Record<SectionId, { title: string; desc: 
     bio: { title: "About you", desc: "A short paragraph about you." },
     identity: { title: "Terminal card", desc: "Your avatar in ASCII art with live GitHub numbers." },
     about: { title: "Bullet list", desc: "What you're into, how you work, fun facts." },
+    numbers: { title: "Numbers", desc: "A row of big numbers: years, repositories, stars…" },
+    interests: { title: "Interests radar", desc: "A radar chart of what you're into, or of your languages." },
     projects: { title: "Projects", desc: "What you're building, each with a repository card." },
     widgets: { title: "GitHub stats", desc: "Streak, contribution graph, stats and languages." },
     links: { title: "Links", desc: "Buttons to your website and social profiles." },
@@ -193,6 +264,8 @@ export const sectionText: Record<Lang, Record<SectionId, { title: string; desc: 
     bio: { title: "Giới thiệu", desc: "Một đoạn ngắn về bạn." },
     identity: { title: "Card terminal", desc: "Avatar vẽ bằng ký tự kèm số liệu GitHub." },
     about: { title: "Danh sách gạch đầu dòng", desc: "Sở thích, cách làm việc, điều thú vị." },
+    numbers: { title: "Con số", desc: "Một hàng số liệu lớn: số năm, repo, sao…" },
+    interests: { title: "Radar sở thích", desc: "Biểu đồ radar những thứ bạn quan tâm, hoặc các ngôn ngữ bạn dùng." },
     projects: { title: "Dự án", desc: "Những gì bạn đang làm, kèm card của repo." },
     widgets: { title: "Thống kê GitHub", desc: "Streak, biểu đồ đóng góp, thống kê, ngôn ngữ." },
     links: { title: "Liên kết", desc: "Nút dẫn tới website và mạng xã hội." },
