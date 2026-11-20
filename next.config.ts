@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
     "/api/stats/users": ["./public/fonts/inter-*"],
     "/api/badge": ["./public/fonts/inter-*"],
     "/api/badge/social": ["./public/fonts/inter-*"],
+    "/api/terminal": ["./public/fonts/jetbrains-mono-*"],
+    "/api/hexdump": ["./public/fonts/jetbrains-mono-*"],
+    "/api/activity": ["./public/fonts/jetbrains-mono-*"],
   },
   // Backgrounds, icons and fonts keep their names when re-encoded, so browsers revalidate daily
   // but keep showing the copy they have meanwhile (Vercel's default is to revalidate every load).

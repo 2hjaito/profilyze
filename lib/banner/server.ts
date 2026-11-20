@@ -231,3 +231,13 @@ export async function embedCardFonts(svg: string): Promise<string> {
   const faces = await Promise.all([400, 600, 700].map((w) => fontFace(`inter:${w}`, chars)));
   return svg.replace("<style>", `<style>${faces.join("")}`);
 }
+
+/** Embeds JetBrains Mono, subset to the text in a terminal card SVG. */
+export async function embedMonoFonts(svg: string): Promise<string> {
+  const chars = [...svg.matchAll(/>([^<>]+)</g)]
+    .map((m) => m[1])
+    .join("")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)));
+  const faces = await Promise.all([400, 700].map((w) => fontFace(`jetbrains-mono:${w}`, chars)));
+  return svg.replace("<style>", `<style>${faces.join("")}`);
+}

@@ -1,7 +1,8 @@
 import "server-only";
-import type { ContributionDay, GithubData, Streak } from "./types";
+import type { ContributionDay, GithubData, RecentRepo, RepoData, Streak } from "./types";
 
 export class GithubUserNotFound extends Error {}
+export class GithubRepoNotFound extends Error {}
 
 const TOKEN = process.env.GITHUB_TOKEN || process.env.TOKEN_GITHUB;
 const TTL = 60 * 60 * 1000;
@@ -245,3 +246,70 @@ async function fetchPublic(login: string): Promise<GithubData> {
   };
 }
 
+
+// ---------- repositories ----------
+
+const repoCache = new Map<string, { at: number; data: Promise<RepoData> }>();
+
+/** One repository's public details, cached per instance for an hour. Uses the token when there is one. */
+export function getRepoData(owner: string, name: string): Promise<RepoData> {
+  const key = `${owner}/${name}`.toLowerCase();
+  const hit = repoCache.get(key);
+  if (hit && Date.now() - hit.at < TTL) return hit.data;
+
+  const data = (async () => {
+    const res = await fetch(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`, {
+      headers: {
+        ...UA,
+        Accept: "application/vnd.github+json",
+        ...(TOKEN ? { Authorization: `bearer ${TOKEN}` } : {}),
+      },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (res.status === 404) throw new GithubRepoNotFound();
+    if (!res.ok) throw new Error(`GitHub repo ${res.status}`);
+    const r = await res.json();
+    return {
+      owner: r.owner?.login ?? owner,
+      name: r.name ?? name,
+      fullName: r.full_name ?? `${owner}/${name}`,
+      description: r.description ?? null,
+      homepage: r.homepage || null,
+      stars: r.stargazers_count ?? 0,
+      forks: r.forks_count ?? 0,
+      watchers: r.subscribers_count ?? r.watchers_count ?? 0,
+      openIssues: r.open_issues_count ?? 0,
+      language: r.language ?? null,
+      topics: Array.isArray(r.topics) ? r.topics : [],
+      license: r.license?.spdx_id && r.license.spdx_id !== "NOASSERTION" ? r.license.spdx_id : (r.license?.name ?? null),
+      ownerAvatarUrl: r.owner?.avatar_url ?? `https://github.com/${encodeURIComponent(owner)}.png`,
+    } satisfies RepoData;
+  })();
+  data.catch(() => repoCache.delete(key));
+  if (repoCache.size > 500) repoCache.clear();
+  repoCache.set(key, { at: Date.now(), data });
+  return data;
+}
+
+const recentCache = new Map<string, { at: number; data: Promise<RecentRepo[]> }>();
+
+/** A user's most recently pushed public repositories, cached per instance for an hour. */
+export function getRecentRepos(login: string): Promise<RecentRepo[]> {
+  const key = login.toLowerCase();
+  const hit = recentCache.get(key);
+  if (hit && Date.now() - hit.at < TTL) return hit.data;
+  const data = (async () => {
+    const res = await fetch(`https://api.github.com/users/${encodeURIComponent(login)}/repos?sort=pushed&per_page=20&type=owner`, {
+      headers: { ...UA, Accept: "application/vnd.github+json", ...(TOKEN ? { Authorization: `bearer ${TOKEN}` } : {}) },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (res.status === 404) throw new GithubUserNotFound();
+    if (!res.ok) throw new Error(`GitHub repos ${res.status}`);
+    const list: { name: string; language: string | null; stargazers_count: number; pushed_at: string; fork: boolean }[] = await res.json();
+    return list.map((r) => ({ name: r.name, language: r.language, stars: r.stargazers_count, pushedAt: r.pushed_at, fork: r.fork }));
+  })();
+  data.catch(() => recentCache.delete(key));
+  if (recentCache.size > 500) recentCache.clear();
+  recentCache.set(key, { at: Date.now(), data });
+  return data;
+}

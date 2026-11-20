@@ -29,3 +29,21 @@ export function formatCount(n: number | undefined): string {
   if (n >= 10_000) return `${+(n / 1000).toFixed(1)}k`;
   return n.toLocaleString("en-US");
 }
+
+export type RepoData = {
+  owner: string;
+  name: string;
+  fullName: string;
+  description: string | null;
+  homepage: string | null;
+  stars: number;
+  forks: number;
+  watchers: number;
+  openIssues: number;
+  language: string | null;
+  topics: string[];
+  license: string | null;
+  ownerAvatarUrl: string;
+};
+
+export type RecentRepo = { name: string; language: string | null; stars: number; pushedAt: string; fork: boolean };
