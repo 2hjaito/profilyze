@@ -46,13 +46,18 @@ The canvas also supports image backgrounds (17 presets, including animated ones)
 
 ## README generator
 
-[https://profilyze.vercel.app/readme](https://profilyze.vercel.app/readme) assembles a complete profile README in one go:
+[https://profilyze.vercel.app/readme](https://profilyze.vercel.app/readme) assembles a complete profile README. Start from a template (Classic, Terminal, Debugger or Minimal), then add, remove and reorder sections. The page is in English and Vietnamese. Sections include:
 
 - your banner from the editor
 - a greeting and an about section
 - a tech stack from 66 vector logos
+- a tagline, a bio and a bullet list with its own heading
+- a tech stack as vector logos or flat badges
+- terminal cards: an identity card, a hexdump header and an activity card
+- a projects section, each with a live repo card, a website badge and a stars badge
 - streak, graph, stats and language widgets in one theme
-- link badges
+- link badges, large or flat
+- a philosophy quote
 
 You get a live preview, **Copy Markdown** and **Download README.md**. Everything you enter is saved in your browser.
 
@@ -99,6 +104,34 @@ Add `&theme=<name>` to any card. You can also add `hide_border=true` or `transpa
 | `dracula` | <img src="https://profilyze.vercel.app/api/github/streak?user=2hjaito&theme=dracula" width="380" alt="dracula streak card" /> |
 | `sunset` | <img src="https://profilyze.vercel.app/api/github/streak?user=2hjaito&theme=sunset" width="380" alt="sunset streak card" /> |
 
+## Terminal cards
+
+Monospace cards in a terminal or debugger style. They follow the viewer's light or dark mode by default (`mode=dark` or `mode=light` to fix one), and take a `palette`: `aurora`, `ember`, `mint`, `lagoon`, `rose`, `sunset`, `mono`, or your own `colors=hex,hex,hex`.
+
+**Terminal**: your avatar as ASCII art next to live stats, neofetch style.
+
+![Terminal card](https://profilyze.vercel.app/api/terminal?user=2hjaito&palette=aurora&mode=dark)
+
+```md
+![me@github](https://profilyze.vercel.app/api/terminal?user=2hjaito&row=Name:+{name}&row=Role:+Fullstack+developer&row=Commits:+{commits}&row=Philosophy:+*Keep+trying.*)
+```
+
+- `row=Key: value` (repeatable, up to 14) replaces the default rows. `{name}`, `{repos}`, `{stars}`, `{commits}`, `{prs}`, `{issues}`, `{followers}`, `{contribs}`, `{total}`, `{streak}`, `{longest}` and `{languages}` fill in live values; numbers are highlighted, and so is any value wrapped in `*stars*`. A row without a colon is a muted note.
+- `repo=owner/name` makes a card for a repository instead (`{description}`, `{stars}`, `{forks}`, `{language}`, `{topics}`, `{license}`, `{issues}`, `{homepage}`).
+- `title=`, `art=none`, `image=<url>` (another picture for the art), `invert=1`, `frame=window`.
+
+![Repository card](https://profilyze.vercel.app/api/terminal?repo=2hjaito/profilyze&palette=ember&mode=dark&frame=window)
+
+**Hexdump header**: your intro as a memory dump, with a blinking caret. `text=` takes up to 256 bytes; without it the card uses your name and top languages.
+
+<img src="https://profilyze.vercel.app/api/hexdump?user=2hjaito&palette=mint&mode=dark" width="100%" alt="Hexdump header" />
+
+**Activity**: contributions as a memory map, recently pushed repositories as a call stack.
+
+<img src="https://profilyze.vercel.app/api/activity?user=2hjaito&palette=mint&mode=dark" width="100%" alt="Activity card" />
+
+The [README generator](https://profilyze.vercel.app/readme) builds all of these, plus project sections with repo cards and link badges, a tagline, a bio, flat stack badges and a philosophy quote.
+
 ## Award badges
 
 Framed badges for features, rankings and shout-outs. Build one on the [Badges](https://profilyze.vercel.app/badges) page, or write the URL yourself.
@@ -141,6 +174,9 @@ Link badges for Discord, GitHub, X, LinkedIn, YouTube, Twitch, Telegram, Reddit,
 | `/api/profile/banner?name=&role=&background=&tech=&skills=&streaks=&view=&user=` | Original query-string banner. `view=` is now a real views counter. |
 | `/api/github/{streak,graph,stats,languages}?user=&theme=` | Profile cards |
 | `/api/github/data?user=` | JSON used by the editor preview |
+| `/api/terminal?user=` or `?repo=owner/name` | Terminal card (`row`, `title`, `palette`, `colors`, `mode`, `frame`, `art`, `image`, `invert`) |
+| `/api/hexdump?user=&text=&title=` | Hexdump header |
+| `/api/activity?user=` | Memory map and call stack |
 | `/api/gallery?before=` | Community banners, newest first (JSON, 24 per page) |
 | `/api/badge?label=&title=&style=&rank=` | Award badge (`laurel`, `gold`, `aurora`, `minimal`) |
 | `/api/badge/social?platform=&label=&value=&theme=` | Social badge (`profilyze`, `brand`, `outline`, `light`) |

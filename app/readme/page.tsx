@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function ReadmePage() {
   return (
-    <PageShell active="readme">
+    <PageShell active="readme" workspace>
       <h1 className="sr-only">GitHub profile README generator</h1>
       <ReadmeBuilder />
     </PageShell>

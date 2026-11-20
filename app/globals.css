@@ -91,4 +91,6 @@ body {
 .md-preview a { color: #4493f8; }
 .md-preview img { display: inline-block; max-width: 100%; vertical-align: middle; }
 .md-preview sub { color: #8b949e; }
+.md-preview blockquote { margin: 0 0 1em; padding: 0 1em; border-left: 0.25em solid #3d444d; color: #9198a1; }
+.md-preview hr { margin: 1.5em 0; height: 0.25em; border: 0; background: #3d444d; }
 .md-preview > :first-child { margin-top: 0; }
