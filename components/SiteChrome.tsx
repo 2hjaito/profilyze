@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { FaDiscord, FaGithub, FaGlobe, FaTiktok, FaYoutube } from "react-icons/fa";
+import { FaDiscord, FaGithub, FaGlobe, FaStar, FaTiktok, FaYoutube } from "react-icons/fa";
+import { repoStars } from "@/lib/github/stars";
+import { formatCount } from "@/lib/github/types";
 import { AUTHOR, REPO_URL } from "@/lib/site";
 import Logo from "./Logo";
 
@@ -13,7 +15,8 @@ const socials = [
 
 type Page = "banner" | "readme" | "widgets" | "badges" | "community" | "about";
 
-export function SiteHeader({ active }: { active: Page }) {
+export async function SiteHeader({ active }: { active: Page }) {
+  const stars = await repoStars();
   const link = (href: string, label: string, on: boolean) => (
     <Link
       href={href}
@@ -44,6 +47,11 @@ export function SiteHeader({ active }: { active: Page }) {
           className="ml-auto hidden items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-muted transition hover:border-zinc-500 hover:text-fg sm:flex"
         >
           <FaGithub /> Star on GitHub
+          {stars !== undefined && (
+            <span className="flex items-center gap-1 border-l border-line pl-2 font-semibold tabular-nums text-fg" title={`${stars.toLocaleString("en-US")} stars`}>
+              <FaStar className="text-amber-400" aria-hidden="true" /> {formatCount(stars)}
+            </span>
+          )}
         </a>
       </div>
     </header>
