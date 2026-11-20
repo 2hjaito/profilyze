@@ -101,7 +101,7 @@ const TOKENS: Record<KitTheme, Record<"dark" | "light", Tokens>> = {
 
 // ---------- fonts and measuring ----------
 
-type FontKey = "inter-400" | "inter-600" | "inter-700" | "newsreader-400" | "newsreader-600" | "mono";
+export type FontKey = "inter-400" | "inter-600" | "inter-700" | "newsreader-400" | "newsreader-600" | "mono" | "mono-700";
 
 const FAMILY = {
   sans: "'Inter',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif",
@@ -116,6 +116,7 @@ const FONTS: Record<FontKey, { family: string; weight: number; face: string }> =
   "newsreader-400": { family: FAMILY.serif, weight: 400, face: "newsreader:400" },
   "newsreader-600": { family: FAMILY.serif, weight: 600, face: "newsreader:600" },
   mono: { family: FAMILY.mono, weight: 400, face: "jetbrains-mono:400" },
+  "mono-700": { family: FAMILY.mono, weight: 700, face: "jetbrains-mono:700" },
 };
 
 type Metric = { avg: number; ranges: [number, number[]][] };
@@ -132,7 +133,7 @@ const wide = (cp: number) =>
 /** Width of `text` in px. `spacing` is letter-spacing in px. */
 export function measure(text: string, font: FontKey, size: number, spacing = 0) {
   const chars = [...text];
-  if (font === "mono") return chars.length * (0.6 * size + spacing);
+  if (font === "mono" || font === "mono-700") return chars.length * (0.6 * size + spacing);
   const m = METRICS[font];
   let units = 0;
   for (const ch of chars) {

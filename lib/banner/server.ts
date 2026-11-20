@@ -285,3 +285,44 @@ export async function deviconHref(id: string): Promise<string | null> {
     return null;
   }
 }
+
+/**
+ * A picture as a one-colour dithered portrait (Floyd–Steinberg): lit pixels in `hex`, the rest
+ * transparent. Drawn with image-rendering:pixelated it reads as a retro halftone. Null on failure.
+ */
+export async function ditherImage(url: string, size: number, hex: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > MAX_CARD_IMAGE_BYTES || !sniffImage(buf)) return null;
+    const { data } = await sharp(buf, { limitInputPixels: 1e8 })
+      .resize(size, size, { fit: "cover", position: "attention" })
+      .grayscale()
+      .normalise()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const g = Float32Array.from(data);
+    const out = Buffer.alloc(size * size * 4);
+    const n = parseInt(hex.slice(1), 16);
+    const rgb = [n >> 16, (n >> 8) & 255, n & 255];
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const i = y * size + x;
+        const lit = g[i] >= 128;
+        const err = g[i] - (lit ? 255 : 0);
+        if (x + 1 < size) g[i + 1] += (err * 7) / 16;
+        if (y + 1 < size) {
+          if (x > 0) g[i + size - 1] += (err * 3) / 16;
+          g[i + size] += (err * 5) / 16;
+          if (x + 1 < size) g[i + size + 1] += err / 16;
+        }
+        if (lit) out.set([...rgb, 255], i * 4);
+      }
+    }
+    const png = await sharp(out, { raw: { width: size, height: size, channels: 4 } }).png({ palette: true, colours: 2 }).toBuffer();
+    return toDataUri("image/png", png);
+  } catch {
+    return null;
+  }
+}

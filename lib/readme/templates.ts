@@ -42,6 +42,9 @@ export type ReadmeState = {
   hexdump: boolean;
   hexText: string;
   kitHeader: boolean;
+  /** Retro game "player card" header (always dark). */
+  player: boolean;
+  playerStatus: string;
   role: string;
   eyebrow: string;
   blurb: string;
@@ -475,6 +478,8 @@ export const INITIAL: ReadmeState = {
   hexdump: false,
   hexText: "",
   kitHeader: false,
+  player: false,
+  playerStatus: "Open to work",
   role: "",
   eyebrow: "",
   blurb: "",

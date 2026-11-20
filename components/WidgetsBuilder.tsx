@@ -27,6 +27,13 @@ const TERMINAL_CARDS = [
 // Profile kit cards: one design language in three looks. `q` gets the user / repo filled in.
 const KIT_CARDS: { id: string; title: string; desc: string; q: (user: string, repo: string) => string; width?: string }[] = [
   { id: "header", title: "Header", desc: "Name, role and a line about you; your avatar or a dotted globe on the right.", q: (u) => `header?user=${u}&avatar=1&role=Developer&bio=A+line+or+two+about+what+you+build.`, width: "100%" },
+  {
+    id: "player",
+    title: "Player card",
+    desc: "Retro game look, always dark: level and XP from contributions, a night skyline, stats and skill bars.",
+    q: (u) => `player?user=${u}&role=Developer&focus=Backend+/+Web&bio=Building+things+that+stay+up.&status=Open+to+work`,
+    width: "100%",
+  },
   { id: "label", title: "Section label", desc: "A heading with a rule, to replace ### headings.", q: () => "label?text=Projects&icon=folder", width: "100%" },
   { id: "button", title: "Link button", desc: "Website, social or mail, with an icon.", q: () => "button?label=Portfolio&icon=globe", width: "" },
   { id: "project-feature", title: "Project, wide", desc: "Text on the left, a screenshot on the right (image=og uses GitHub's preview).", q: (_, r) => `project?size=feature&repo=${r}&image=og`, width: "100%" },

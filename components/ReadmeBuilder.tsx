@@ -179,6 +179,23 @@ function buildMarkdown(s: ReadmeState, bannerQs: string) {
         const href = s.headerLink.trim() ? withProtocol(s.headerLink.trim()) : "";
         out.push(`<p>${link(href, pic(url, [name, s.role.trim()].filter(Boolean).join(", "), 'width="100%"'))}</p>`);
       }
+      if (s.player) {
+        const p = new URLSearchParams(
+          (
+            [
+              ["user", user],
+              ["name", name],
+              ["role", s.role.trim()],
+              ["focus", s.eyebrow.trim()],
+              ["bio", s.blurb.trim()],
+              ["status", s.playerStatus.trim()],
+            ] as [string, string][]
+          ).filter(([, v]) => v),
+        );
+        const accent = s.kitAccent.replace("#", "");
+        if (/^[0-9a-f]{6}$/i.test(accent)) p.set("accent", accent);
+        out.push(`<p><img src="${SITE_URL}/api/kit/player?${p}" alt="${attr([name, s.role.trim()].filter(Boolean).join(", "))}" width="100%" /></p>`);
+      }
       if (s.banner && bannerQs) out.push(`[![${name}](${SITE_URL}/api/banner?${bannerQs})](${SITE_URL}/?${bannerQs})`);
       if (s.hexdump && (user || s.hexText.trim())) {
         const q = cardQuery(
@@ -783,27 +800,30 @@ function SectionBody({
     case "header":
       return (
         <>
-          {s.kit !== "off" && (
-            <>
-              <Toggle label={t.kitHeader} checked={s.kitHeader} onChange={(v) => set("kitHeader", v)} />
-              {s.kitHeader && (
-                <div className="space-y-3 rounded-lg border border-line bg-bg/40 p-3">
-                  <Field label={t.eyebrow}>
-                    <input className={inputCls} value={s.eyebrow} placeholder="Hanoi · Building in public" onChange={(e) => set("eyebrow", e.target.value)} />
-                  </Field>
-                  <Field label={t.role}>
-                    <input className={inputCls} value={s.role} placeholder="Fullstack developer" onChange={(e) => set("role", e.target.value)} />
-                  </Field>
-                  <Field label={t.blurb}>
-                    <textarea className={`${inputCls} min-h-16 resize-y`} value={s.blurb} onChange={(e) => set("blurb", e.target.value)} />
-                  </Field>
-                  <Field label={t.headerLink}>
-                    <input className={inputCls} value={s.headerLink} placeholder="example.com" onChange={(e) => set("headerLink", e.target.value)} />
-                  </Field>
-                  <Toggle label={t.avatar} checked={s.avatar} onChange={(v) => set("avatar", v)} />
-                </div>
+          {s.kit !== "off" && <Toggle label={t.kitHeader} checked={s.kitHeader} onChange={(v) => set("kitHeader", v)} />}
+          <Toggle label={t.player} checked={s.player} onChange={(v) => set("player", v)} />
+          {s.player && <p className="-mt-1 text-xs text-muted">{t.playerHint}</p>}
+          {((s.kit !== "off" && s.kitHeader) || s.player) && (
+            <div className="space-y-3 rounded-lg border border-line bg-bg/40 p-3">
+              <Field label={t.eyebrow}>
+                <input className={inputCls} value={s.eyebrow} placeholder="Hanoi · Building in public" onChange={(e) => set("eyebrow", e.target.value)} />
+              </Field>
+              <Field label={t.role}>
+                <input className={inputCls} value={s.role} placeholder="Fullstack developer" onChange={(e) => set("role", e.target.value)} />
+              </Field>
+              <Field label={t.blurb}>
+                <textarea className={`${inputCls} min-h-16 resize-y`} value={s.blurb} onChange={(e) => set("blurb", e.target.value)} />
+              </Field>
+              <Field label={t.headerLink}>
+                <input className={inputCls} value={s.headerLink} placeholder="example.com" onChange={(e) => set("headerLink", e.target.value)} />
+              </Field>
+              {s.kit !== "off" && s.kitHeader && <Toggle label={t.avatar} checked={s.avatar} onChange={(v) => set("avatar", v)} />}
+              {s.player && (
+                <Field label={t.playerStatus}>
+                  <input className={inputCls} value={s.playerStatus} onChange={(e) => set("playerStatus", e.target.value)} />
+                </Field>
               )}
-            </>
+            </div>
           )}
           <Toggle label={t.useBanner} checked={s.banner} onChange={(v) => set("banner", v)} />
           {s.banner && (

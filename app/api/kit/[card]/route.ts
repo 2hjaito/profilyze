@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { avatarUrl, deviconHref, embedFonts, fetchCardImage } from "@/lib/banner/server";
+import { avatarUrl, deviconHref, ditherImage, embedFonts, fetchCardImage } from "@/lib/banner/server";
 import { vectorIcons } from "@/lib/catalog";
 import { kitLookFrom, param, textParam } from "@/lib/cards/kit";
 import {
@@ -17,6 +17,7 @@ import {
   type RadarAxis,
   type Rendered,
 } from "@/lib/cards/kit-cards";
+import { playerCard } from "@/lib/cards/player";
 import { getGithubData, getRepoData, GithubRepoNotFound, GithubUserNotFound } from "@/lib/github/fetch";
 import { formatCount, type GithubData } from "@/lib/github/types";
 import { CACHE, errorSvg, svgResponse } from "@/lib/http";
@@ -32,6 +33,9 @@ import { CACHE, errorSvg, svgResponse } from "@/lib/http";
 //   /api/kit/stack?group=Backend|Services+that+stay+up|java,spring,postgresql&also=docker,git&also_label=Also+in+the+toolbox
 //   /api/kit/contributions?user=2hjaito
 //   /api/kit/radar?title=My+Interests&data=DeFi:5,PayFi:3,DAOs:8&max=10   (or ?user= for language shares)
+//   /api/kit/player?user=2hjaito&role=Backend+engineer&focus=Backend+/+Real-time&bio=...&status=Open+to+roles
+//       &skill=Latency:70&skill=State:55   stat=Label:value (up to 8)   motto=  footer=  prompt=  build=
+//       Always dark (an arcade screen); accent= recolours it. Skills default to your top languages.
 
 const USER = /^[a-zA-Z0-9-]{1,39}$/;
 const REPO = /^([a-zA-Z0-9-]{1,39})\/([\w.-]{1,100})$/;
@@ -198,6 +202,77 @@ const cards: Record<string, Handler> = {
     if (axes.length < 3) throw new BadRequest("A radar needs at least 3 values");
     return { card: radarCard(kitLookFrom(q), title, axes, max), cache };
   },
+};
+
+const HEX6 = /^#?([0-9a-f]{6})$/i;
+const pairs = (q: URLSearchParams, key: string, max: number) =>
+  q
+    .getAll(key)
+    .flatMap((v) => v.split(","))
+    .map((v) => {
+      const i = v.lastIndexOf(":");
+      return i < 0 ? null : { label: v.slice(0, i).trim().slice(0, 24), value: v.slice(i + 1).trim().slice(0, 14) };
+    })
+    .filter((v): v is { label: string; value: string } => Boolean(v?.label))
+    .slice(0, max);
+
+cards.player = async (q) => {
+  const github = await githubFor(q, false);
+  const accentHex = HEX6.exec(q.get("accent") ?? "");
+  const accent = accentHex ? `#${accentHex[1].toLowerCase()}` : "#8b86ff";
+  const portrait = github && q.get("avatar") !== "0" ? await ditherImage(avatarUrl(github, 200), 96, accent) : null;
+
+  // Level from all-time contributions: each level needs a little more than the last.
+  const total = github?.total ?? 0;
+  const level = Math.floor(Math.sqrt(total / 20)) + 1;
+  const from = 20 * (level - 1) ** 2;
+  const to = 20 * level ** 2;
+  const xp = github ? (total - from) / (to - from) : 0.6;
+
+  const stats = q.has("stat")
+    ? pairs(q, "stat", 8)
+    : github
+      ? [
+          { label: "Commits", value: formatCount(github.commits ?? github.contribs) },
+          { label: "Pull requests", value: formatCount(github.prs) },
+          { label: "Stars", value: formatCount(github.stars) },
+          { label: "Repositories", value: formatCount(github.repos) },
+          { label: "Contributions", value: formatCount(github.total) },
+          { label: "Current streak", value: `${github.current.length}d` },
+          { label: "Longest streak", value: `${github.longest.length}d` },
+          { label: "Followers", value: formatCount(github.followers) },
+        ]
+      : [];
+  let skills = pairs(q, "skill", 4).map((s) => ({ label: s.label, value: Number(s.value) || 0 }));
+  if (!skills.length && github?.languages?.length) {
+    const top = github.languages[0].size;
+    skills = github.languages.slice(0, 4).map((l) => ({ label: l.name, value: Math.round(Math.sqrt(l.size / top) * 100) }));
+  }
+
+  const login = github?.login ?? "player";
+  const now = new Date();
+  const svg = playerCard({
+    name: param(q, "name", 40) || github?.name || github?.login || "Player One",
+    role: param(q, "role", 40),
+    focus: param(q, "focus", 48),
+    bio: textParam(q, "bio", 220),
+    status: param(q, "status", 24),
+    note: param(q, "note", 40),
+    prompt: param(q, "prompt", 70) || `${login.toLowerCase()}@github:~$ ./profile --player 1`,
+    build: param(q, "build", 40) || `BUILD ${now.getUTCFullYear()}.${String(now.getUTCMonth() + 1).padStart(2, "0")} / PASSING`,
+    motto: param(q, "motto", 60),
+    footer: param(q, "footer", 60),
+    portrait: portrait ?? undefined,
+    level,
+    xp: Math.min(1, Math.max(0, xp)),
+    xpText: github ? `XP ${formatCount(total)} · next level in ${formatCount(to - total)}` : "XP —",
+    stats,
+    skills,
+    accent,
+    alert: "#e0405f",
+    seed: [...login].reduce((h, ch) => (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0, 7),
+  });
+  return { card: { svg, faces: ["jetbrains-mono:400", "jetbrains-mono:700"] }, cache: github ? CACHE.live : CACHE.static };
 };
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ card: string }> }) {
