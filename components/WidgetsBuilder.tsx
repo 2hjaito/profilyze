@@ -113,7 +113,7 @@ export default function WidgetsBuilder() {
   // The time zone tells the card whether "today" has already been practiced.
   const duoPath = () => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    return `/api/duolingo?user=${debounced.duolingo}&theme=${opts.duoLook}&lang=${opts.duoLang}&tz=${tz}&v=2`;
+    return `/api/duolingo?user=${debounced.duolingo}&theme=${opts.duoLook}&lang=${opts.duoLang}&tz=${tz}&v=3`;
   };
 
   const query = (card: string) => {
