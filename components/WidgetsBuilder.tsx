@@ -65,7 +65,6 @@ export default function WidgetsBuilder() {
     kit: "native",
     kitMode: "auto",
     duoUser: "",
-    duoLook: "mascot",
     duoLang: "en",
     duoName: true,
     duoStreak: true,
@@ -115,10 +114,10 @@ export default function WidgetsBuilder() {
   };
 
   // The time zone tells the card whether "today" has already been practiced.
-  const duoPath = () => {
+  const duoPath = (look: string) => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const show = [opts.duoName && "name", opts.duoStreak && "streak", opts.duoMessage && "message", opts.duoArt && "art"].filter(Boolean).join(",");
-    return `/api/duolingo?user=${debounced.duolingo}&theme=${opts.duoLook}&lang=${opts.duoLang}&tz=${tz}&show=${show}&v=4`;
+    return `/api/duolingo?user=${debounced.duolingo}&theme=${look}&lang=${opts.duoLang}&tz=${tz}&show=${show}&v=4`;
   };
 
   const query = (card: string) => {
@@ -195,12 +194,6 @@ export default function WidgetsBuilder() {
             />
           </label>
           <Select
-            label="Look"
-            value={opts.duoLook}
-            options={Object.entries(duolingoThemes).map(([value, t]) => ({ value, label: `${t.label} · ${t.desc}` }))}
-            onChange={setOpt("duoLook")}
-          />
-          <Select
             label="Language"
             value={opts.duoLang}
             options={[
@@ -223,17 +216,20 @@ export default function WidgetsBuilder() {
         {TERMINAL_CARDS.map((c) => (
           <Card key={c.id} title={c.title} desc={c.desc} path={terminalQuery(c.id)} />
         ))}
-        <Card
-          title="Duolingo streak"
-          desc="Your streak; the mascot look reacts to whether you practiced today."
-          path={debounced.duolingo ? duoPath() : ""}
-          snippet={
-            debounced.duolingo
-              ? `<img src="${SITE_URL}${duoPath()}" alt="Duolingo streak" width="${opts.duoLook === "mascot" ? 400 : 240}" />`
-              : ""
-          }
-          copyLabel="Copy HTML"
-        />
+        {Object.entries(duolingoThemes).map(([look, t]) => (
+          <Card
+            key={look}
+            title={`Duolingo streak · ${t.label}`}
+            desc={t.desc}
+            path={debounced.duolingo ? duoPath(look) : ""}
+            snippet={
+              debounced.duolingo
+                ? `<img src="${SITE_URL}${duoPath(look)}" alt="Duolingo streak" width="${look === "mascot" ? 400 : 240}" />`
+                : ""
+            }
+            copyLabel="Copy HTML"
+          />
+        ))}
         <h2 className="pt-4 text-xs font-medium uppercase tracking-[0.14em] text-muted">Profile kit</h2>
         {KIT_CARDS.map((c) => {
           const path = kitPath(c);
