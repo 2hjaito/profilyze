@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     // Short cache: the mascot should react soon after a lesson.
     return svgResponse(
       await embedCardFonts(duolingoCard(streak, theme, practicedToday, lang)),
-      "public, max-age=300, s-maxage=900, stale-while-revalidate=3600",
+      "public, max-age=300, s-maxage=900, stale-while-revalidate=300",
     );
   } catch (err) {
     if (err instanceof DuolingoUserNotFound) return svgResponse(errorSvg(`Duolingo user "${user}" not found`), CACHE.remote, 404);
