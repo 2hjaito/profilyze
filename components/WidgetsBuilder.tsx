@@ -66,6 +66,7 @@ export default function WidgetsBuilder() {
     kitMode: "auto",
     duoUser: "",
     duoLang: "en",
+    duoState: "auto",
     duoName: true,
     duoStreak: true,
     duoMessage: true,
@@ -114,10 +115,10 @@ export default function WidgetsBuilder() {
   };
 
   // The time zone tells the card whether "today" has already been practiced.
-  const duoPath = (look: string) => {
+  const duoPath = (look: string, preview = false) => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const show = [opts.duoName && "name", opts.duoStreak && "streak", opts.duoMessage && "message", opts.duoArt && "art"].filter(Boolean).join(",");
-    return `/api/duolingo?user=${debounced.duolingo}&theme=${look}&lang=${opts.duoLang}&tz=${tz}&show=${show}&v=4`;
+    return `/api/duolingo?user=${debounced.duolingo}&theme=${look}&lang=${opts.duoLang}&tz=${tz}&show=${show}${preview && look === "mascot" && opts.duoState !== "auto" ? `&state=${opts.duoState}` : ""}&v=5`;
   };
 
   const query = (card: string) => {
@@ -202,6 +203,18 @@ export default function WidgetsBuilder() {
             ]}
             onChange={setOpt("duoLang")}
           />
+          <Select
+            label="Mascot mood (preview)"
+            value={opts.duoState}
+            options={[
+              { value: "auto", label: "Auto · from your data and the time" },
+              { value: "done", label: "Practiced today" },
+              { value: "todo", label: "Not yet today" },
+              { value: "urgent", label: "Evening, still nothing" },
+              { value: "lost", label: "No streak left" },
+            ]}
+            onChange={setOpt("duoState")}
+          />
           <Toggle label="Show username" checked={opts.duoName} onChange={setOpt("duoName")} />
           <Toggle label="Show streak number" checked={opts.duoStreak} onChange={setOpt("duoStreak")} />
           <Toggle label="Show message" checked={opts.duoMessage} onChange={setOpt("duoMessage")} />
@@ -221,7 +234,7 @@ export default function WidgetsBuilder() {
             key={look}
             title={`Duolingo streak · ${t.label}`}
             desc={t.desc}
-            path={debounced.duolingo ? duoPath(look) : ""}
+            path={debounced.duolingo ? duoPath(look, true) : ""}
             snippet={
               debounced.duolingo
                 ? `<img src="${SITE_URL}${duoPath(look)}" alt="Duolingo streak" width="${look === "mascot" ? 400 : 240}" />`

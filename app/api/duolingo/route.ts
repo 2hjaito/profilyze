@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { embedCardFonts } from "@/lib/banner/server";
-import { duolingoCard, isDuolingoTheme, type DuolingoShow } from "@/lib/cards/duolingo";
-import { DuolingoUserNotFound, getDuolingoStatus } from "@/lib/duolingo";
+import { duolingoCard, isDuolingoState, isDuolingoTheme, stateFor, type DuolingoShow } from "@/lib/cards/duolingo";
+import { DuolingoUserNotFound, getDuolingoStatus, hourIn } from "@/lib/duolingo";
 import { CACHE, errorSvg, svgResponse } from "@/lib/http";
 
 // Duolingo streak card:
@@ -9,6 +9,7 @@ import { CACHE, errorSvg, svgResponse } from "@/lib/http";
 //   theme=mascot|light|orange   (mascot is the default)
 //   tz=Asia/Ho_Chi_Minh         your time zone, to tell whether today's lesson is done (default UTC)
 //   show=name,streak,message,art   what to draw (default: streak,message,art)
+//   state=done|todo|urgent|lost    force the mascot mood (default: from your data and the local hour)
 //   lang=en|vi                  mascot card message
 // `streak=` (and `today=0|1`) skip the lookup and draw those values (handy for previews).
 
@@ -28,17 +29,19 @@ export async function GET(req: NextRequest) {
     message: parts.includes("message"),
     art: parts.includes("art"),
   };
+  const st = q.get("state");
+  const forced = isDuolingoState(st) ? st : undefined;
   const fixed = Number(q.get("streak"));
 
   if (Number.isInteger(fixed) && fixed >= 0 && q.has("streak"))
-    return svgResponse(await embedCardFonts(duolingoCard(Math.min(fixed, 99999), theme, q.get("today") !== "0", lang, show)), CACHE.static);
+    return svgResponse(await embedCardFonts(duolingoCard(Math.min(fixed, 99999), theme, forced ?? (q.get("today") !== "0" ? "done" : "todo"), lang, show)), CACHE.static);
   if (!USER.test(user)) return svgResponse(errorSvg("Add ?user=<duolingo username>"), CACHE.none, 400);
 
   try {
     const { streak, practicedToday } = await getDuolingoStatus(user, tz);
     // Short cache: the mascot should react soon after a lesson.
     return svgResponse(
-      await embedCardFonts(duolingoCard(streak, theme, practicedToday, lang, show)),
+      await embedCardFonts(duolingoCard(streak, theme, forced ?? stateFor(streak, practicedToday, hourIn(tz)), lang, show)),
       "public, max-age=300, s-maxage=900, stale-while-revalidate=300",
     );
   } catch (err) {

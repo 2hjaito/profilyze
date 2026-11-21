@@ -13,6 +13,15 @@ export function todayIn(tz: string) {
   }
 }
 
+/** Current hour (0-23) in an IANA time zone; UTC if the zone is unknown. */
+export function hourIn(tz: string) {
+  try {
+    return Number(new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", hourCycle: "h23" }).format(new Date()));
+  } catch {
+    return new Date().getUTCHours();
+  }
+}
+
 /**
  * Current streak and whether today's lesson is done. `streakData.currentStreak.length` is the live
  * value (`streak` can lag); the streak's endDate is the last day with a lesson, so endDate >= today
