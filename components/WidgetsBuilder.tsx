@@ -64,7 +64,7 @@ export default function WidgetsBuilder() {
     repo: "2hjaito/profilyze",
     kit: "native",
     kitMode: "auto",
-    duolingo: "haothiendz",
+    duoUser: "",
     duoLook: "mascot",
     duoLang: "en",
   });
@@ -74,13 +74,14 @@ export default function WidgetsBuilder() {
   const setTheme = setOpt("theme");
   const setHideBorder = setOpt("hideBorder");
   const setTransparent = setOpt("transparent");
-  const [debounced, setDebounced] = useState({ user, repo: opts.repo, duolingo: opts.duolingo });
+  const duoName = opts.duoUser || user;
+  const [debounced, setDebounced] = useState({ user, repo: opts.repo, duolingo: duoName });
   const debouncedUser = debounced.user;
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced({ user, repo: opts.repo, duolingo: opts.duolingo }), 500);
+    const t = setTimeout(() => setDebounced({ user, repo: opts.repo, duolingo: duoName }), 500);
     return () => clearTimeout(t);
-  }, [user, opts.repo, opts.duolingo]);
+  }, [user, opts.repo, duoName]);
 
   const terminalQuery = (id: string) => {
     const p = new URLSearchParams({ palette: opts.palette });
@@ -183,8 +184,9 @@ export default function WidgetsBuilder() {
             <span className="mb-1.5 block text-xs font-medium text-muted">Duolingo username</span>
             <input
               className={inputCls}
-              value={opts.duolingo}
-              onChange={(e) => setOpt("duolingo")(e.target.value.replace(/[^\w.-]/g, "").slice(0, 40))}
+              value={opts.duoUser}
+              placeholder={user || "same as GitHub"}
+              onChange={(e) => setOpt("duoUser")(e.target.value.replace(/[^\w.-]/g, "").slice(0, 40))}
             />
           </label>
           <Select
