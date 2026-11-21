@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { FiCheck, FiCopy } from "react-icons/fi";
 import { kitThemes } from "@/lib/cards/kit-meta";
 import { themes } from "@/lib/cards/render";
+import { duolingoThemes } from "@/lib/cards/duolingo";
 import { palettes } from "@/lib/cards/terminal";
 import { AUTHOR, SITE_URL } from "@/lib/site";
 import { inputCls, Panel, Select, Toggle } from "./editor/ui";
@@ -63,6 +64,9 @@ export default function WidgetsBuilder() {
     repo: "2hjaito/profilyze",
     kit: "native",
     kitMode: "auto",
+    duolingo: "haothiendz",
+    duolingoTheme: "mascot",
+    duolingoLang: "en",
   });
   const { user, theme, hideBorder, transparent } = opts;
   const setOpt = <K extends keyof typeof opts>(k: K) => (v: (typeof opts)[K]) => setOpts((o) => ({ ...o, [k]: v }));
@@ -70,13 +74,13 @@ export default function WidgetsBuilder() {
   const setTheme = setOpt("theme");
   const setHideBorder = setOpt("hideBorder");
   const setTransparent = setOpt("transparent");
-  const [debounced, setDebounced] = useState({ user, repo: opts.repo });
+  const [debounced, setDebounced] = useState({ user, repo: opts.repo, duolingo: opts.duolingo });
   const debouncedUser = debounced.user;
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced({ user, repo: opts.repo }), 500);
+    const t = setTimeout(() => setDebounced({ user, repo: opts.repo, duolingo: opts.duolingo }), 500);
     return () => clearTimeout(t);
-  }, [user, opts.repo]);
+  }, [user, opts.repo, opts.duolingo]);
 
   const terminalQuery = (id: string) => {
     const p = new URLSearchParams({ palette: opts.palette });
@@ -103,6 +107,12 @@ export default function WidgetsBuilder() {
     return opts.kitMode === "auto"
       ? `<picture><source media="(prefers-color-scheme: dark)" srcset="${url}&mode=dark" /><img src="${url}&mode=light" alt="${c.title}" ${size} /></picture>`
       : `<img src="${url}&mode=${opts.kitMode}" alt="${c.title}" ${size} />`;
+  };
+
+  // The time zone tells the card whether "today" has already been practiced.
+  const duoPath = () => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return `/api/duolingo?user=${debounced.duolingo}&theme=${opts.duolingoTheme}&lang=${opts.duolingoLang}&tz=${tz}`;
   };
 
   const query = (card: string) => {
@@ -168,6 +178,31 @@ export default function WidgetsBuilder() {
             onChange={setOpt("kitMode")}
           />
         </Panel>
+        <Panel title="Duolingo" className="mt-4">
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-muted">Duolingo username</span>
+            <input
+              className={inputCls}
+              value={opts.duolingo}
+              onChange={(e) => setOpt("duolingo")(e.target.value.replace(/[^\w.-]/g, "").slice(0, 40))}
+            />
+          </label>
+          <Select
+            label="Look"
+            value={opts.duolingoTheme}
+            options={Object.entries(duolingoThemes).map(([value, t]) => ({ value, label: `${t.label} · ${t.desc}` }))}
+            onChange={setOpt("duolingoTheme")}
+          />
+          <Select
+            label="Language"
+            value={opts.duolingoLang}
+            options={[
+              { value: "en", label: "English" },
+              { value: "vi", label: "Tiếng Việt" },
+            ]}
+            onChange={setOpt("duolingoLang")}
+          />
+        </Panel>
       </div>
 
       <div className="space-y-4">
@@ -177,6 +212,17 @@ export default function WidgetsBuilder() {
         {TERMINAL_CARDS.map((c) => (
           <Card key={c.id} title={c.title} desc={c.desc} path={terminalQuery(c.id)} />
         ))}
+        <Card
+          title="Duolingo streak"
+          desc="Your streak; the mascot look reacts to whether you practiced today."
+          path={debounced.duolingo ? duoPath() : ""}
+          snippet={
+            debounced.duolingo
+              ? `<img src="${SITE_URL}${duoPath()}" alt="Duolingo streak" width="${opts.duolingoTheme === "mascot" ? 400 : 240}" />`
+              : ""
+          }
+          copyLabel="Copy HTML"
+        />
         <h2 className="pt-4 text-xs font-medium uppercase tracking-[0.14em] text-muted">Profile kit</h2>
         {KIT_CARDS.map((c) => {
           const path = kitPath(c);
