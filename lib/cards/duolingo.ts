@@ -2,9 +2,11 @@
 // Pure SVG; Inter is injected by embedCardFonts.
 
 import { escapeXml as esc } from "../banner/render";
+import { LAVA_JPEG } from "./duolingo-lava";
 
-export type DuolingoTheme = "mascot" | "light" | "orange";
+export type DuolingoTheme = "mascot" | "lava" | "light" | "orange";
 export const duolingoThemes: Record<DuolingoTheme, { label: string; desc: string }> = {
+  lava: { label: "Lava", desc: "The owl hopping across lava stones, with your streak on the stone it stands on." },
   mascot: { label: "Mascot", desc: "Purple card; the owl cheers or worries depending on whether you practiced today." },
   light: { label: "Flame", desc: "White card with an orange flame." },
   orange: { label: "Owl", desc: "Orange card with the owl." },
@@ -167,8 +169,29 @@ ${top}
 </svg>`;
 }
 
+/** The lava scene with the streak painted on the stone the owl stands on. */
+function lavaCard(streak: number, show: DuolingoShow) {
+  const W = 900;
+  const H = 600;
+  const digits = String(streak).length;
+  const size = digits <= 2 ? 72 : digits === 3 ? 62 : digits === 4 ? 50 : 40;
+  const aria = `${streak} day Duolingo streak`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="450" height="300" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(aria)}" ${FONT}>
+<title>${esc(aria)}</title>
+<style></style>
+<clipPath id="c"><rect width="${W}" height="${H}" rx="44"/></clipPath>
+<g clip-path="url(#c)">
+<rect width="${W}" height="${H}" fill="#ff6a35"/>
+${show.art ? `<image href="${LAVA_JPEG}" width="${W}" height="${H}"/>` : ""}
+</g>
+${show.name ? `<text x="44" y="84" font-size="40" font-weight="700" fill="#ffffff">${esc(label(show.name))}</text>` : ""}
+${show.streak ? `<text x="318" y="${330 + size * 0.2}" text-anchor="middle" font-size="${size}" font-weight="700" fill="#ffffff" stroke="#4a2f2d" stroke-width="10" stroke-linejoin="round" paint-order="stroke">${streak}</text>` : ""}
+</svg>`;
+}
+
 export function duolingoCard(streak: number, theme: DuolingoTheme, state: DuolingoState = "done", lang: DuolingoLang = "en", show: DuolingoShow = DEFAULT_SHOW) {
   if (theme === "mascot") return mascotCard(streak, state, lang, show);
+  if (theme === "lava") return lavaCard(streak, show);
   const light = theme === "light";
   const bg = light ? "#ffffff" : "#ff9600";
   const text = light ? "#ff9600" : "#ffffff";
