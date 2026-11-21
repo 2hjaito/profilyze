@@ -4,7 +4,7 @@ import { listBanners } from "@/lib/registry";
 // Keeps the community gallery's banners warm. Each banner is rendered once from scratch (GitHub
 // stats, icons, fonts), which takes seconds on a cold instance; this loads the latest ones the same
 // way the gallery does, so the build lands in the shared cache (and at the edge) before a visitor asks.
-// Triggered hourly by vercel.json. With CRON_SECRET set, Vercel sends it as a bearer token.
+// Triggered daily by vercel.json (Vercel Hobby allows nothing more frequent). With CRON_SECRET set, Vercel sends it as a bearer token.
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
