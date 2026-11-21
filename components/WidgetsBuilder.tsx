@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { FiCheck, FiCopy } from "react-icons/fi";
 import { kitThemes } from "@/lib/cards/kit-meta";
 import { themes } from "@/lib/cards/render";
-import { duolingoThemes } from "@/lib/cards/duolingo";
+import { duoLooks } from "@/lib/cards/duolingo";
 import { palettes } from "@/lib/cards/terminal";
 import { AUTHOR, SITE_URL } from "@/lib/site";
 import { inputCls, Panel, Select, Toggle } from "./editor/ui";
@@ -65,8 +65,8 @@ export default function WidgetsBuilder() {
     kit: "native",
     kitMode: "auto",
     duolingo: "haothiendz",
-    duolingoTheme: "mascot",
-    duolingoLang: "en",
+    duoLook: "mascot",
+    duoLang: "en",
   });
   const { user, theme, hideBorder, transparent } = opts;
   const setOpt = <K extends keyof typeof opts>(k: K) => (v: (typeof opts)[K]) => setOpts((o) => ({ ...o, [k]: v }));
@@ -112,7 +112,7 @@ export default function WidgetsBuilder() {
   // The time zone tells the card whether "today" has already been practiced.
   const duoPath = () => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    return `/api/duolingo?user=${debounced.duolingo}&theme=${opts.duolingoTheme}&lang=${opts.duolingoLang}&tz=${tz}`;
+    return `/api/duolingo?user=${debounced.duolingo}&theme=${opts.duoLook}&lang=${opts.duoLang}&tz=${tz}`;
   };
 
   const query = (card: string) => {
@@ -189,18 +189,18 @@ export default function WidgetsBuilder() {
           </label>
           <Select
             label="Look"
-            value={opts.duolingoTheme}
-            options={Object.entries(duolingoThemes).map(([value, t]) => ({ value, label: `${t.label} · ${t.desc}` }))}
-            onChange={setOpt("duolingoTheme")}
+            value={opts.duoLook}
+            options={Object.entries(duoLooks).map(([value, t]) => ({ value, label: `${t.label} · ${t.desc}` }))}
+            onChange={setOpt("duoLook")}
           />
           <Select
             label="Language"
-            value={opts.duolingoLang}
+            value={opts.duoLang}
             options={[
               { value: "en", label: "English" },
               { value: "vi", label: "Tiếng Việt" },
             ]}
-            onChange={setOpt("duolingoLang")}
+            onChange={setOpt("duoLang")}
           />
         </Panel>
       </div>
@@ -218,7 +218,7 @@ export default function WidgetsBuilder() {
           path={debounced.duolingo ? duoPath() : ""}
           snippet={
             debounced.duolingo
-              ? `<img src="${SITE_URL}${duoPath()}" alt="Duolingo streak" width="${opts.duolingoTheme === "mascot" ? 400 : 240}" />`
+              ? `<img src="${SITE_URL}${duoPath()}" alt="Duolingo streak" width="${opts.duoLook === "mascot" ? 400 : 240}" />`
               : ""
           }
           copyLabel="Copy HTML"
