@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { embedCardFonts } from "@/lib/banner/server";
-import { duolingoCard, isDuolingoTheme } from "@/lib/cards/duolingo";
+import { duolingoCard, isDuolingoTheme, type DuolingoShow } from "@/lib/cards/duolingo";
 import { DuolingoUserNotFound, getDuolingoStatus } from "@/lib/duolingo";
 import { CACHE, errorSvg, svgResponse } from "@/lib/http";
 
@@ -8,6 +8,7 @@ import { CACHE, errorSvg, svgResponse } from "@/lib/http";
 //   /api/duolingo?user=haothiendz&theme=light|orange
 //   theme=mascot|light|orange   (mascot is the default)
 //   tz=Asia/Ho_Chi_Minh         your time zone, to tell whether today's lesson is done (default UTC)
+//   show=name,streak,message,art   what to draw (default: streak,message,art)
 //   lang=en|vi                  mascot card message
 // `streak=` (and `today=0|1`) skip the lookup and draw those values (handy for previews).
 
@@ -20,17 +21,24 @@ export async function GET(req: NextRequest) {
   const theme = isDuolingoTheme(t) ? t : "mascot";
   const lang = q.get("lang") === "vi" ? "vi" : "en";
   const tz = (q.get("tz") ?? "").slice(0, 64) || "UTC";
+  const parts = (q.get("show") ?? "streak,message,art").split(",");
+  const show: DuolingoShow = {
+    name: parts.includes("name") && USER.test(user) ? user : undefined,
+    streak: parts.includes("streak"),
+    message: parts.includes("message"),
+    art: parts.includes("art"),
+  };
   const fixed = Number(q.get("streak"));
 
   if (Number.isInteger(fixed) && fixed >= 0 && q.has("streak"))
-    return svgResponse(await embedCardFonts(duolingoCard(Math.min(fixed, 99999), theme, q.get("today") !== "0", lang)), CACHE.static);
+    return svgResponse(await embedCardFonts(duolingoCard(Math.min(fixed, 99999), theme, q.get("today") !== "0", lang, show)), CACHE.static);
   if (!USER.test(user)) return svgResponse(errorSvg("Add ?user=<duolingo username>"), CACHE.none, 400);
 
   try {
     const { streak, practicedToday } = await getDuolingoStatus(user, tz);
     // Short cache: the mascot should react soon after a lesson.
     return svgResponse(
-      await embedCardFonts(duolingoCard(streak, theme, practicedToday, lang)),
+      await embedCardFonts(duolingoCard(streak, theme, practicedToday, lang, show)),
       "public, max-age=300, s-maxage=900, stale-while-revalidate=300",
     );
   } catch (err) {

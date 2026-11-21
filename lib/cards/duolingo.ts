@@ -35,6 +35,10 @@ const owl = (c: string) =>
   `</g>`;
 
 export type DuolingoLang = "en" | "vi";
+/** What the card shows: the username label, the streak number, the message, and the picture. */
+export type DuolingoShow = { name?: string; streak: boolean; message: boolean; art: boolean };
+export const DEFAULT_SHOW: DuolingoShow = { streak: true, message: true, art: true };
+const label = (name: string) => `@${name.length > 24 ? `${name.slice(0, 23)}…` : name}`;
 const MESSAGES = {
   en: { done: "You practiced today. Nice!", todo: "Come back soon!" },
   vi: { done: "Hôm nay bạn đã học rồi!", todo: "Nhớ trở lại sớm nhé!" },
@@ -69,7 +73,7 @@ const sparkle = (x: number, y: number, r: number, c: string) =>
 const lavaDrop = (x: number, y: number, w: number) =>
   `<path d="M${x} ${y}C${x + w * 0.2} ${y + w * 0.7} ${x + w * 0.5} ${y + w * 0.9} ${x + w * 0.5} ${y + w * 1.3}a${w * 0.5} ${w * 0.5} 0 0 1-${w} 0c0-${w * 0.4} ${w * 0.3}-${w * 0.6} ${w * 0.5}-${w * 1.3}z" fill="#ffd36a" fill-opacity=".38"/>`;
 
-function mascotCard(streak: number, practiced: boolean, lang: DuolingoLang) {
+function mascotCard(streak: number, practiced: boolean, lang: DuolingoLang, show: DuolingoShow) {
   const W = 400;
   const H = 280;
   const size = String(streak).length > 3 ? 40 : 46;
@@ -84,6 +88,21 @@ function mascotCard(streak: number, practiced: boolean, lang: DuolingoLang) {
       sparkle(76, 120, 4, "#ffe08a") + sparkle(334, 108, 3, "#ffe08a") + sparkle(96, 236, 3, "#ffe08a")
     : `<rect width="${W}" height="${H}" fill="url(#bg)"/><path d="M150 0H250L340 ${H}H60Z" fill="url(#beam)"/>` +
       sparkle(78, 176, 9, "#4aa8ff") + sparkle(98, 222, 6, "#c77dff") + sparkle(314, 168, 6, "#ffd24a") + sparkle(332, 204, 11, "#ff6ad5");
+  // Stack what's switched on from the top: name, flame + number, message.
+  let y = 22;
+  let top = "";
+  if (show.name) {
+    top += `<text x="${W / 2}" y="${y + 16}" text-anchor="middle" font-size="17" font-weight="600" fill="${practiced ? "#fff" : "#e4d9ff"}" fill-opacity=".9">${esc(label(show.name))}</text>`;
+    y += 32;
+  }
+  if (show.streak) {
+    top +=
+      `<g transform="translate(${x0.toFixed(1)} ${y}) scale(.3)">${flame.replace(/#ff9600/g, practiced ? "#ffffff" : "#ff4b4b").replace(/#ffc800/g, practiced ? "#ffc800" : "#ffb3b3")}</g>` +
+      `<text x="${(x0 + 38).toFixed(1)}" y="${y + size * 0.78}" font-size="${size}" font-weight="700" fill="${color}"${practiced ? ` stroke="${edge}" stroke-width="6" stroke-linejoin="round" paint-order="stroke"` : ""}>${streak}</text>`;
+    y += size + 12;
+  }
+  if (show.message)
+    top += `<text x="${W / 2}" y="${y + 22}" text-anchor="middle" font-size="22" font-weight="600" fill="${practiced ? "#fff" : "#e4d9ff"}">${esc(msg)}</text>`;
   const [c1, c2] = practiced ? ["#ff7a2e", "#ffa43c"] : ["#5b2bb8", "#3a1580"];
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(aria)}" ${FONT}>
 <title>${esc(aria)}</title>
@@ -96,16 +115,14 @@ function mascotCard(streak: number, practiced: boolean, lang: DuolingoLang) {
 </defs>
 <g clip-path="url(#c)">
 ${scene}
-${mascot(practiced)}
+${show.art ? mascot(practiced) : ""}
 </g>
-<g transform="translate(${x0.toFixed(1)} 26) scale(.3)">${flame.replace(/#ff9600/g, practiced ? "#ffffff" : "#ff4b4b").replace(/#ffc800/g, practiced ? "#ffc800" : "#ffb3b3")}</g>
-<text x="${(x0 + 38).toFixed(1)}" y="${26 + size * 0.78}" font-size="${size}" font-weight="700" fill="${color}"${practiced ? ` stroke="${edge}" stroke-width="6" stroke-linejoin="round" paint-order="stroke"` : ""}>${streak}</text>
-<text x="${W / 2}" y="${26 + size + 36}" text-anchor="middle" font-size="22" font-weight="600" fill="${practiced ? "#fff" : "#e4d9ff"}">${esc(msg)}</text>
+${top}
 </svg>`;
 }
 
-export function duolingoCard(streak: number, theme: DuolingoTheme, practiced = true, lang: DuolingoLang = "en") {
-  if (theme === "mascot") return mascotCard(streak, practiced, lang);
+export function duolingoCard(streak: number, theme: DuolingoTheme, practiced = true, lang: DuolingoLang = "en", show: DuolingoShow = DEFAULT_SHOW) {
+  if (theme === "mascot") return mascotCard(streak, practiced, lang, show);
   const light = theme === "light";
   const bg = light ? "#ffffff" : "#ff9600";
   const text = light ? "#ff9600" : "#ffffff";
@@ -124,13 +141,14 @@ export function duolingoCard(streak: number, theme: DuolingoTheme, practiced = t
 <clipPath id="c"><rect width="${S}" height="${S}" rx="20"/></clipPath>
 <g clip-path="url(#c)">
 <rect width="${S}" height="${S}" fill="${bg}"/>
-${art}
+${show.art ? art : ""}
 </g>
 ${light ? `<rect x=".5" y=".5" width="${S - 1}" height="${S - 1}" rx="20" fill="none" stroke="#e5e5e5"/>` : ""}
-<text x="28" y="84" font-size="22" font-weight="700" fill="${text}">I’m on a</text>
-<text x="28" y="${84 + size * 0.95}" font-size="${size}" font-weight="700" fill="#ffffff" stroke="${edge}" stroke-width="${Math.round(size / 7)}" stroke-linejoin="round" paint-order="stroke">${streak}</text>
-<text x="28" y="${84 + size * 0.95 + 44}" font-size="22" font-weight="700" fill="${text}">day language</text>
-<text x="28" y="${84 + size * 0.95 + 70}" font-size="22" font-weight="700" fill="${text}">learning streak!</text>
+${show.name ? `<text x="28" y="46" font-size="18" font-weight="700" fill="${text}">${esc(label(show.name))}</text>` : ""}
+${show.streak ? `<text x="28" y="84" font-size="22" font-weight="700" fill="${text}">I’m on a</text>
+<text x="28" y="${84 + size * 0.95}" font-size="${size}" font-weight="700" fill="#ffffff" stroke="${edge}" stroke-width="${Math.round(size / 7)}" stroke-linejoin="round" paint-order="stroke">${streak}</text>` : ""}
+${show.message ? `<text x="28" y="${show.streak ? 84 + size * 0.95 + 44 : 130}" font-size="22" font-weight="700" fill="${text}">day language</text>
+<text x="28" y="${show.streak ? 84 + size * 0.95 + 70 : 156}" font-size="22" font-weight="700" fill="${text}">learning streak!</text>` : ""}
 <text x="28" y="${S - 28}" font-size="26" font-weight="700" letter-spacing="-.5" fill="${LOGO[theme]}">duolingo</text>
 </svg>`;
 }

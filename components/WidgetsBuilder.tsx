@@ -67,6 +67,10 @@ export default function WidgetsBuilder() {
     duoUser: "",
     duoLook: "mascot",
     duoLang: "en",
+    duoName: true,
+    duoStreak: true,
+    duoMessage: true,
+    duoArt: true,
   });
   const { user, theme, hideBorder, transparent } = opts;
   const setOpt = <K extends keyof typeof opts>(k: K) => (v: (typeof opts)[K]) => setOpts((o) => ({ ...o, [k]: v }));
@@ -113,7 +117,8 @@ export default function WidgetsBuilder() {
   // The time zone tells the card whether "today" has already been practiced.
   const duoPath = () => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    return `/api/duolingo?user=${debounced.duolingo}&theme=${opts.duoLook}&lang=${opts.duoLang}&tz=${tz}&v=3`;
+    const show = [opts.duoName && "name", opts.duoStreak && "streak", opts.duoMessage && "message", opts.duoArt && "art"].filter(Boolean).join(",");
+    return `/api/duolingo?user=${debounced.duolingo}&theme=${opts.duoLook}&lang=${opts.duoLang}&tz=${tz}&show=${show}&v=4`;
   };
 
   const query = (card: string) => {
@@ -204,6 +209,10 @@ export default function WidgetsBuilder() {
             ]}
             onChange={setOpt("duoLang")}
           />
+          <Toggle label="Show username" checked={opts.duoName} onChange={setOpt("duoName")} />
+          <Toggle label="Show streak number" checked={opts.duoStreak} onChange={setOpt("duoStreak")} />
+          <Toggle label="Show message" checked={opts.duoMessage} onChange={setOpt("duoMessage")} />
+          <Toggle label="Show picture" checked={opts.duoArt} onChange={setOpt("duoArt")} />
         </Panel>
       </div>
 
