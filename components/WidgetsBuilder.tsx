@@ -67,7 +67,7 @@ export default function WidgetsBuilder() {
     duoUser: "",
     duoLang: "en",
     duoState: "auto",
-    duoName: true,
+    duoShowName: false,
     duoStreak: true,
     duoMessage: true,
     duoArt: true,
@@ -117,8 +117,8 @@ export default function WidgetsBuilder() {
   // The time zone tells the card whether "today" has already been practiced.
   const duoPath = (look: string, preview = false) => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const show = [opts.duoName && "name", opts.duoStreak && "streak", opts.duoMessage && "message", opts.duoArt && "art"].filter(Boolean).join(",");
-    return `/api/duolingo?user=${debounced.duolingo}&theme=${look}&lang=${opts.duoLang}&tz=${tz}&show=${show}${preview && look === "mascot" && opts.duoState !== "auto" ? `&state=${opts.duoState}` : ""}&v=5`;
+    const show = [opts.duoShowName && "name", opts.duoStreak && "streak", opts.duoMessage && "message", opts.duoArt && "art"].filter(Boolean).join(",");
+    return `/api/duolingo?user=${debounced.duolingo}&theme=${look}&lang=${opts.duoLang}&tz=${tz}&show=${show}${preview && look === "mascot" && opts.duoState !== "auto" ? `&state=${opts.duoState}` : ""}&v=6`;
   };
 
   const query = (card: string) => {
@@ -215,7 +215,7 @@ export default function WidgetsBuilder() {
             ]}
             onChange={setOpt("duoState")}
           />
-          <Toggle label="Show username" checked={opts.duoName} onChange={setOpt("duoName")} />
+          <Toggle label="Show Duolingo username on the card" checked={opts.duoShowName} onChange={setOpt("duoShowName")} />
           <Toggle label="Show streak number" checked={opts.duoStreak} onChange={setOpt("duoStreak")} />
           <Toggle label="Show message" checked={opts.duoMessage} onChange={setOpt("duoMessage")} />
           <Toggle label="Show picture" checked={opts.duoArt} onChange={setOpt("duoArt")} />
@@ -237,7 +237,7 @@ export default function WidgetsBuilder() {
             path={debounced.duolingo ? duoPath(look, true) : ""}
             snippet={
               debounced.duolingo
-                ? `<img src="${SITE_URL}${duoPath(look)}" alt="Duolingo streak" width="${look === "mascot" ? 400 : 240}" />`
+                ? `<img src="${SITE_URL}${duoPath(look)}" alt="Duolingo streak" width="${look === "mascot" || look === "lava" ? 400 : 240}" />`
                 : ""
             }
             copyLabel="Copy HTML"
