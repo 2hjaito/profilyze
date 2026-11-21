@@ -5,7 +5,7 @@ import { escapeXml as esc } from "../banner/render";
 
 export type DuolingoTheme = "mascot" | "light" | "orange";
 export const duolingoThemes: Record<DuolingoTheme, { label: string; desc: string }> = {
-  mascot: { label: "Mascot", desc: "Purple card; the green owl cheers or worries depending on whether you practiced today." },
+  mascot: { label: "Mascot", desc: "Purple card; the owl cheers or worries depending on whether you practiced today." },
   light: { label: "Flame", desc: "White card with an orange flame." },
   orange: { label: "Owl", desc: "Orange card with the owl." },
 };
@@ -40,22 +40,13 @@ const MESSAGES = {
   vi: { done: "Hôm nay bạn đã học rồi!", todo: "Nhớ trở lại sớm nhé!" },
 };
 
-/** The green owl peeking over the bottom edge, centred on x=200: happy when practiced, worried when not. */
+/** The line-art owl, centred on x=200 and standing on the bottom edge: bright green when practiced, dim with a worried drop when not. */
 function mascot(practiced: boolean) {
-  const eye = (cx: number) =>
-    `<ellipse cx="${cx}" cy="186" rx="21" ry="${practiced ? 18 : 17}" fill="#fff" stroke="#3c8f00" stroke-width="3"/>` +
-    `<circle cx="${cx + (practiced ? 0 : cx < 200 ? 4 : -4)}" cy="${practiced ? 187 : 181}" r="8" fill="#2b2b2b"/>` +
-    `<circle cx="${cx + (practiced ? 3 : cx < 200 ? 6 : -2)}" cy="${practiced ? 183 : 177}" r="2.8" fill="#fff"/>`;
-  const brows = practiced
-    ? ""
-    : `<path d="M152 174 L190 163 M248 174 L210 163" stroke="#3c8f00" stroke-width="5" stroke-linecap="round"/>`;
-  const mouth = practiced ? `<path d="M188 216 Q200 227 212 216" fill="none" stroke="#3c8f00" stroke-width="3.5" stroke-linecap="round"/>` : "";
+  const color = practiced ? "#89e219" : "#a79bc9";
+  const drop = practiced ? "" : `<path d="M40 7c1.6 2.4 2.6 3.7 2.6 5a2.6 2.6 0 0 1-5.2 0c0-1.3 1-2.6 2.6-5z" fill="#6cc0ff"/>`;
   return (
-    `<path d="M132 240V178Q132 148 160 150L174 160Q200 150 226 160L240 150Q268 148 268 178V240Z" fill="#78c800" stroke="#58a700" stroke-width="3"/>` +
-    `<ellipse cx="200" cy="240" rx="44" ry="26" fill="#b4ee62"/>` +
-    brows + eye(174) + eye(226) +
-    `<path d="M200 196l11 8-11 10-11-10z" fill="#ffb020" stroke="#e08a00" stroke-width="2" stroke-linejoin="round"/>` +
-    mouth
+    `<circle cx="200" cy="205" r="62" fill="${color}" fill-opacity=".12"/>` +
+    `<g transform="translate(118 119) scale(3.4)">${owl(color)}${drop}</g>`
   );
 }
 
@@ -64,7 +55,7 @@ const sparkle = (x: number, y: number, r: number, c: string) =>
 
 function mascotCard(streak: number, practiced: boolean, lang: DuolingoLang) {
   const W = 400;
-  const H = 240;
+  const H = 280;
   const size = String(streak).length > 3 ? 40 : 46;
   const numW = String(streak).length * size * 0.6;
   const x0 = (W - (30 + 8 + numW)) / 2;
@@ -81,8 +72,8 @@ function mascotCard(streak: number, practiced: boolean, lang: DuolingoLang) {
 </defs>
 <g clip-path="url(#c)">
 <rect width="${W}" height="${H}" fill="url(#bg)"/>
-<path d="M150 0H250L330 ${H}H70Z" fill="url(#beam)"/>
-${sparkle(92, 168, 9, "#4aa8ff")}${sparkle(112, 206, 6, "#c77dff")}${sparkle(300, 160, 6, "#ffd24a")}${sparkle(318, 188, 11, "#ff6ad5")}${sparkle(286, 214, 5, "#4aa8ff")}
+<path d="M150 0H250L340 ${H}H60Z" fill="url(#beam)"/>
+${sparkle(78, 176, 9, "#4aa8ff")}${sparkle(98, 222, 6, "#c77dff")}${sparkle(314, 168, 6, "#ffd24a")}${sparkle(332, 204, 11, "#ff6ad5")}${sparkle(300, 244, 5, "#4aa8ff")}
 ${mascot(practiced)}
 </g>
 <g transform="translate(${x0.toFixed(1)} 26) scale(.3)">${flame.replace(/#ff9600/g, color).replace(/#ffc800/g, practiced ? "#ffc800" : "#ffb3b3")}</g>
