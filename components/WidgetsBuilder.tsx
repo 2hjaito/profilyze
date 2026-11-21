@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { FiCheck, FiCopy } from "react-icons/fi";
 import { kitThemes } from "@/lib/cards/kit-meta";
 import { themes } from "@/lib/cards/render";
-import { duoLooks } from "@/lib/cards/duolingo";
+import { duolingoThemes } from "@/lib/cards/duolingo";
 import { palettes } from "@/lib/cards/terminal";
 import { AUTHOR, SITE_URL } from "@/lib/site";
 import { inputCls, Panel, Select, Toggle } from "./editor/ui";
@@ -190,7 +190,7 @@ export default function WidgetsBuilder() {
           <Select
             label="Look"
             value={opts.duoLook}
-            options={Object.entries(duoLooks).map(([value, t]) => ({ value, label: `${t.label} · ${t.desc}` }))}
+            options={Object.entries(duolingoThemes).map(([value, t]) => ({ value, label: `${t.label} · ${t.desc}` }))}
             onChange={setOpt("duoLook")}
           />
           <Select
