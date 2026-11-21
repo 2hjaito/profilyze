@@ -23,17 +23,6 @@ const flame = `<path d="M54 2C62 24 98 42 98 80c0 24-20 38-46 38S6 104 6 80c0-20
   `<path d="M52 64c8 12 18 20 18 32 0 10-8 18-18 18s-18-8-18-18c0-12 10-20 18-32z" fill="#ffc800"/>` +
   `<path d="M16 10c4 6 8 10 8 15a8 8 0 0 1-16 0c0-5 4-9 8-15z" fill="#ff9600"/>`;
 
-// Line-art owl, scaled from a 48-unit box. Drawn in the sun-yellow of the card's glow.
-const owl = (c: string) =>
-  `<g fill="none" stroke="${c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">` +
-  `<path d="M13.06 22.11c-.329 0-.654.064-.958.188a2.124 2.124 0 0 1-1.59 3.166v2.288a2.547 2.547 0 0 0 5.095 0v-3.095a2.547 2.547 0 0 0-2.547-2.547m21.805 0c-.329 0-.654.064-.959.188a2.124 2.124 0 0 1-1.588 3.166v2.288a2.547 2.547 0 0 0 5.094 0v-3.095a2.547 2.547 0 0 0-2.547-2.547"/>` +
-  `<path d="M5.6 17.86a8.76 8.76 0 0 0-2.1 5.7v5.19a8.826 8.826 0 0 0 13.2 7.67a8.784 8.784 0 0 0 3.22-3.16M5.87 15.75c.23-1.41.73-2.65 1.61-2.65c.56 0 1.09.35 1.52.75m.98-1.86c.19-.86.62-1.57 1.53-1.57c3.33 0 5.09 8.96 12.49 8.96c2.2 0 3.9-.79 5.29-1.91m1.84-1.79c2.13-2.47 3.5-5.26 5.36-5.26c2.24 0 1.58 4.26 1.53 4.61"/>` +
-  `<path d="M38.01 15.05s0-.01.01-.02c.14-.22 1.27-1.93 2.5-1.93c.65 0 1.09.67 1.37 1.59c.28.91.4 2.07.4 3.03a8.79 8.79 0 0 1 2.21 5.84v5.19c0 2.44-.99 4.65-2.58 6.25a8.846 8.846 0 0 1-6.25 2.58c-3.12 0-6-1.64-7.59-4.32"/>` +
-  `<path d="m24 33.833l4.9-.694a4.504 4.504 0 0 0-4.9-4.222a4.504 4.504 0 0 0-4.9 4.222z"/>` +
-  `<path d="M27.578 33.326a3.582 3.582 0 1 1-7.156 0m-4.564-13.219c.063-2.61-1.251-4.87-2.13-5.41s-1.49 1.166-1.49 1.166s-1.356-4.569-4.724-5.326c1.404 1.388 2.663 6.975.856 7.546s-1.224-2.696-2.504-2.334S7.08 23.56 7.08 23.56m30.872-4.03c-.583-2.2-2.531-4.963-3.527-3.818c-.645.741.38 1.609-.304 2.139c-1.803-1.247-4.14-3.557-5.085-2.354c-1.197 1.522 1.842 1.53.847 8.132m.256-12.423c-.833-.29-1.402-.28-2.997-1.46c.263 1.727.923 2.78 2.096 3.357c.704.346 1.433.12 1.712-.504c.325-.7-.064-1.135-.811-1.393"/>` +
-  `<path d="m15.9 32.29l-8.22-1.81C7.25 29.69 7 28.77 7 27.8v-3.29c0-3.09 2.5-5.59 5.59-5.59s5.6 2.5 5.6 5.59v3.29c0 1.85-.9 3.49-2.29 4.49m24.41-1.8L32.1 32.3c-.23-.16-.45-.35-.65-.55a5.579 5.579 0 0 1-1.64-3.95v-3.29c0-3.09 2.51-5.59 5.6-5.59S41 21.42 41 24.51v3.29c0 .98-.25 1.89-.69 2.69"/>` +
-  `</g>`;
-
 export type DuolingoLang = "en" | "vi";
 /** What the card shows: the username label, the streak number, the message, and the picture. */
 export type DuolingoShow = { name?: string; streak: boolean; message: boolean; art: boolean };
@@ -177,13 +166,14 @@ export function duolingoCard(streak: number, theme: DuolingoTheme, state: Duolin
   const size = digits <= 2 ? 80 : digits === 3 ? 72 : digits === 4 ? 58 : 46;
   const art = light
     ? `<g transform="translate(176 26) scale(1.15)">${flame}</g>`
-    : `<circle cx="246" cy="150" r="74" fill="none" stroke="#ffc800" stroke-opacity=".35" stroke-width="3"/>` +
-      `<circle cx="246" cy="150" r="56" fill="#ffc800" fill-opacity=".22"/>` +
-      `<g transform="translate(186 100) scale(2.6)">${owl("#ffd900")}</g>`;
+    : `<circle cx="262" cy="248" r="66" fill="none" stroke="#ffc800" stroke-opacity=".35" stroke-width="3"/>` +
+      `<circle cx="262" cy="248" r="48" fill="#ffc800" fill-opacity=".22"/>` +
+      `<g transform="translate(118 103) scale(.7)">${mascot("done")}</g>`;
   const aria = `${streak} day language learning streak on Duolingo`;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" role="img" aria-label="${esc(aria)}" ${FONT}>
 <title>${esc(aria)}</title>
 <style></style>
+<defs><linearGradient id="owl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d6e61a"/><stop offset=".14" stop-color="#a3c81c"/><stop offset="1" stop-color="#7cae1c"/></linearGradient></defs>
 <clipPath id="c"><rect width="${S}" height="${S}" rx="20"/></clipPath>
 <g clip-path="url(#c)">
 <rect width="${S}" height="${S}" fill="${bg}"/>
