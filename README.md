@@ -174,6 +174,7 @@ Link badges for Discord, GitHub, X, LinkedIn, YouTube, Twitch, Telegram, Reddit,
 | `/api/profile/banner?name=&role=&background=&tech=&skills=&streaks=&view=&user=` | Original query-string banner. `view=` is now a real views counter. |
 | `/api/github/{streak,graph,stats,languages}?user=&theme=` | Profile cards |
 | `/api/github/data?user=` | JSON used by the editor preview |
+| `/api/duolingo?user=` | Duolingo streak card (`theme=mascot\|light\|orange`, `tz`, `lang=en\|vi`, `show=name,streak,message,art`; `streak=` and `today=0\|1` draw fixed values) |
 | `/api/terminal?user=` or `?repo=owner/name` | Terminal card (`row`, `title`, `palette`, `colors`, `mode`, `frame`, `art`, `image`, `invert`) |
 | `/api/hexdump?user=&text=&title=` | Hexdump header |
 | `/api/activity?user=` | Memory map and call stack |

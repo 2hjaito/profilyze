@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { FiCheck, FiCopy } from "react-icons/fi";
 import { kitThemes } from "@/lib/cards/kit-meta";
 import { themes } from "@/lib/cards/render";
+import { duolingoThemes } from "@/lib/cards/duolingo";
 import { palettes } from "@/lib/cards/terminal";
 import { AUTHOR, SITE_URL } from "@/lib/site";
 import { inputCls, Panel, Select, Toggle } from "./editor/ui";
@@ -63,6 +64,13 @@ export default function WidgetsBuilder() {
     repo: "2hjaito/profilyze",
     kit: "native",
     kitMode: "auto",
+    duoUser: "",
+    duoLang: "en",
+    duoState: "auto",
+    duoName: true,
+    duoStreak: true,
+    duoMessage: true,
+    duoArt: true,
   });
   const { user, theme, hideBorder, transparent } = opts;
   const setOpt = <K extends keyof typeof opts>(k: K) => (v: (typeof opts)[K]) => setOpts((o) => ({ ...o, [k]: v }));
@@ -70,13 +78,14 @@ export default function WidgetsBuilder() {
   const setTheme = setOpt("theme");
   const setHideBorder = setOpt("hideBorder");
   const setTransparent = setOpt("transparent");
-  const [debounced, setDebounced] = useState({ user, repo: opts.repo });
+  const duoName = opts.duoUser || user;
+  const [debounced, setDebounced] = useState({ user, repo: opts.repo, duolingo: duoName });
   const debouncedUser = debounced.user;
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced({ user, repo: opts.repo }), 500);
+    const t = setTimeout(() => setDebounced({ user, repo: opts.repo, duolingo: duoName }), 500);
     return () => clearTimeout(t);
-  }, [user, opts.repo]);
+  }, [user, opts.repo, duoName]);
 
   const terminalQuery = (id: string) => {
     const p = new URLSearchParams({ palette: opts.palette });
@@ -103,6 +112,13 @@ export default function WidgetsBuilder() {
     return opts.kitMode === "auto"
       ? `<picture><source media="(prefers-color-scheme: dark)" srcset="${url}&mode=dark" /><img src="${url}&mode=light" alt="${c.title}" ${size} /></picture>`
       : `<img src="${url}&mode=${opts.kitMode}" alt="${c.title}" ${size} />`;
+  };
+
+  // The time zone tells the card whether "today" has already been practiced.
+  const duoPath = (look: string, preview = false) => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const show = [opts.duoName && "name", opts.duoStreak && "streak", opts.duoMessage && "message", opts.duoArt && "art"].filter(Boolean).join(",");
+    return `/api/duolingo?user=${debounced.duolingo}&theme=${look}&lang=${opts.duoLang}&tz=${tz}&show=${show}${preview && look === "mascot" && opts.duoState !== "auto" ? `&state=${opts.duoState}` : ""}&v=5`;
   };
 
   const query = (card: string) => {
@@ -168,6 +184,42 @@ export default function WidgetsBuilder() {
             onChange={setOpt("kitMode")}
           />
         </Panel>
+        <Panel title="Duolingo" className="mt-4">
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-muted">Duolingo username</span>
+            <input
+              className={inputCls}
+              value={opts.duoUser}
+              placeholder={user || "same as GitHub"}
+              onChange={(e) => setOpt("duoUser")(e.target.value.replace(/[^\w.-]/g, "").slice(0, 40))}
+            />
+          </label>
+          <Select
+            label="Language"
+            value={opts.duoLang}
+            options={[
+              { value: "en", label: "English" },
+              { value: "vi", label: "Tiếng Việt" },
+            ]}
+            onChange={setOpt("duoLang")}
+          />
+          <Select
+            label="Mascot mood (preview)"
+            value={opts.duoState}
+            options={[
+              { value: "auto", label: "Auto · from your data and the time" },
+              { value: "done", label: "Practiced today" },
+              { value: "todo", label: "Not yet today" },
+              { value: "urgent", label: "Evening, still nothing" },
+              { value: "lost", label: "No streak left" },
+            ]}
+            onChange={setOpt("duoState")}
+          />
+          <Toggle label="Show username" checked={opts.duoName} onChange={setOpt("duoName")} />
+          <Toggle label="Show streak number" checked={opts.duoStreak} onChange={setOpt("duoStreak")} />
+          <Toggle label="Show message" checked={opts.duoMessage} onChange={setOpt("duoMessage")} />
+          <Toggle label="Show picture" checked={opts.duoArt} onChange={setOpt("duoArt")} />
+        </Panel>
       </div>
 
       <div className="space-y-4">
@@ -176,6 +228,20 @@ export default function WidgetsBuilder() {
         ))}
         {TERMINAL_CARDS.map((c) => (
           <Card key={c.id} title={c.title} desc={c.desc} path={terminalQuery(c.id)} />
+        ))}
+        {Object.entries(duolingoThemes).map(([look, t]) => (
+          <Card
+            key={look}
+            title={`Duolingo streak · ${t.label}`}
+            desc={t.desc}
+            path={debounced.duolingo ? duoPath(look, true) : ""}
+            snippet={
+              debounced.duolingo
+                ? `<img src="${SITE_URL}${duoPath(look)}" alt="Duolingo streak" width="${look === "mascot" ? 400 : 240}" />`
+                : ""
+            }
+            copyLabel="Copy HTML"
+          />
         ))}
         <h2 className="pt-4 text-xs font-medium uppercase tracking-[0.14em] text-muted">Profile kit</h2>
         {KIT_CARDS.map((c) => {
