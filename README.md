@@ -151,7 +151,7 @@ Framed badges for features, rankings and shout-outs. Build one on the [Badges](h
 
 ## Social badges
 
-Link badges for Discord, GitHub, X, LinkedIn, YouTube, Twitch, Telegram, Reddit, Facebook, Instagram, TikTok, Buy me a coffee, website and email. Build them on the [Badges](https://profilyze.vercel.app/badges) page.
+Link badges for Discord, GitHub, X, LinkedIn, YouTube, Twitch, Telegram, Reddit, Facebook, Instagram, TikTok, Duolingo, Buy me a coffee, website and email. Build them on the [Badges](https://profilyze.vercel.app/badges) page.
 
 | Theme | Preview |
 | --- | --- |
