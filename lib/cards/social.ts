@@ -18,6 +18,7 @@ import {
   FaXTwitter,
   FaYoutube,
 } from "react-icons/fa6";
+import { SiDuolingo } from "react-icons/si";
 import { escapeXml as esc } from "../banner/render";
 
 type Platform = { name: string; icon: IconType; color: string; value: string; href?: (v: string) => string };
@@ -34,6 +35,7 @@ export const platforms = {
   facebook: { name: "Facebook", icon: FaFacebook, color: "#0866FF", value: "Follow", href: (v) => `https://facebook.com/${v}` },
   instagram: { name: "Instagram", icon: FaInstagram, color: "#E4405F", value: "Follow", href: (v) => `https://instagram.com/${v}` },
   tiktok: { name: "TikTok", icon: FaTiktok, color: "#FE2C55", value: "Follow", href: (v) => `https://tiktok.com/@${v}` },
+  duolingo: { name: "Duolingo", icon: SiDuolingo, color: "#58CC02", value: "Follow", href: (v) => `https://www.duolingo.com/profile/${v}` },
   coffee: { name: "Buy me a coffee", icon: FaMugHot, color: "#FFDD00", value: "Support" },
   website: { name: "Website", icon: FaGlobe, color: "#83ebf1", value: "Visit" },
   email: { name: "Email", icon: FaEnvelope, color: "#EA4335", value: "Say hi", href: (v) => `mailto:${v}` },
